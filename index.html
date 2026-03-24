@@ -2661,6 +2661,7 @@ function renderLibrary() {
   const textFilter = (document.getElementById('librarySearchInput')?.value || '').toLowerCase();
   const listEl = document.getElementById('libraryList');
   const emptyEl = document.getElementById('libraryEmpty');
+  if (!listEl || !emptyEl) return;
 
   let filtered = library;
 
@@ -2720,6 +2721,7 @@ function renderTopSongs() {
   const monthStats = stats[monthKey] || {};
   const section = document.getElementById('topSongsSection');
   const list = document.getElementById('topSongsList');
+  if (!section || !list) return;
 
   const sorted = Object.entries(monthStats)
     .sort((a, b) => b[1] - a[1])
@@ -2748,6 +2750,7 @@ function renderLibraryPicks() {
   const library = getSongLibrary();
   const section = document.getElementById('libraryPickSection');
   const list = document.getElementById('libraryPickList');
+  if (!section || !list) return;
 
   if (library.length === 0) {
     section.style.display = 'none';
