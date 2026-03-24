@@ -5,6 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Young Life Club - Slide Maker</title>
 <script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyBiTFKRtOefisZPTAsxQquaTV-4RydFQjY",
+    authDomain: "yl-slides.firebaseapp.com",
+    projectId: "yl-slides",
+    storageBucket: "yl-slides.firebasestorage.app",
+    messagingSenderId: "859455582419",
+    appId: "1:859455582419:web:f06861a45f93276b45e426",
+    measurementId: "G-QW1YL8TXCB"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
@@ -2410,25 +2425,58 @@ function createNameSlide(pres, data, theme) {
 }
 
 // ============================================================
-// SONG LIBRARY (localStorage)
+// SONG LIBRARY (Firebase Firestore + local cache)
 // ============================================================
+let songLibraryCache = [];
+let usageStatsCache = {};
+let firestoreReady = false;
+
+// Initialize: load from Firestore and listen for real-time updates
+function initFirestoreLibrary() {
+  // Load songs collection with real-time listener
+  db.collection('songs').orderBy('updatedAt', 'desc').onSnapshot(snapshot => {
+    songLibraryCache = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    firestoreReady = true;
+    renderLibrary();
+    renderLibraryPicks();
+    renderTopSongs();
+  }, err => {
+    console.error('Firestore songs listener error:', err);
+    // Fallback to localStorage
+    try { songLibraryCache = JSON.parse(localStorage.getItem('yl-song-library') || '[]'); } catch(e) { songLibraryCache = []; }
+    firestoreReady = true;
+    renderLibrary();
+    renderLibraryPicks();
+  });
+
+  // Load usage stats
+  db.collection('meta').doc('usageStats').onSnapshot(doc => {
+    usageStatsCache = doc.exists ? doc.data() : {};
+    renderTopSongs();
+  }, err => {
+    console.error('Firestore usage listener error:', err);
+    try { usageStatsCache = JSON.parse(localStorage.getItem('yl-song-usage') || '{}'); } catch(e) { usageStatsCache = {}; }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', initFirestoreLibrary);
+
 function getSongLibrary() {
-  try {
-    return JSON.parse(localStorage.getItem('yl-song-library') || '[]');
-  } catch(e) { return []; }
+  return songLibraryCache;
 }
 
 function saveSongLibrary(library) {
+  // Local cache is updated via onSnapshot listener; no manual set needed
+  // Keep localStorage as backup
   localStorage.setItem('yl-song-library', JSON.stringify(library));
 }
 
 function getUsageStats() {
-  try {
-    return JSON.parse(localStorage.getItem('yl-song-usage') || '{}');
-  } catch(e) { return {}; }
+  return usageStatsCache;
 }
 
 function saveUsageStats(stats) {
+  db.collection('meta').doc('usageStats').set(stats).catch(err => console.error('Error saving usage stats:', err));
   localStorage.setItem('yl-song-usage', JSON.stringify(stats));
 }
 
@@ -2453,34 +2501,33 @@ function saveToLibrary() {
   }
 
   const library = getSongLibrary();
-
   const category = selectedCategory;
 
   // Check if already exists
-  const existing = library.findIndex(s => s.title.toLowerCase() === title.toLowerCase());
-  if (existing >= 0) {
-    library[existing].lyrics = lyrics;
-    library[existing].artist = artist || library[existing].artist;
-    library[existing].category = category;
-    library[existing].updatedAt = new Date().toISOString();
+  const existing = library.find(s => s.title.toLowerCase() === title.toLowerCase());
+  if (existing) {
+    // Update existing doc in Firestore
+    db.collection('songs').doc(existing.id).update({
+      lyrics: lyrics,
+      artist: artist || existing.artist,
+      category: category,
+      updatedAt: new Date().toISOString()
+    }).catch(err => console.error('Error updating song:', err));
     showToast(`Updated "${title}" in library`);
   } else {
-    library.push({
-      id: Date.now().toString(),
+    // Add new doc to Firestore
+    const songData = {
       title: title,
       artist: artist,
       lyrics: lyrics,
       category: category,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
-    });
+    };
+    db.collection('songs').add(songData).catch(err => console.error('Error adding song:', err));
     showToast(`Saved "${title}" to library`);
   }
-
-  saveSongLibrary(library);
-  renderLibrary();
-  renderLibraryPicks();
-  renderTopSongs();
+  // UI updates happen automatically via onSnapshot listener
 }
 
 function loadFromLibrary(id) {
@@ -2500,9 +2547,7 @@ function setLibraryCategory(id, category) {
   const library = getSongLibrary();
   const song = library.find(s => s.id === id);
   if (!song) return;
-  song.category = category;
-  saveSongLibrary(library);
-  renderLibrary();
+  db.collection('songs').doc(id).update({ category: category }).catch(err => console.error('Error updating category:', err));
   showToast(`Set "${song.title}" as ${category}`);
 }
 
@@ -2513,9 +2558,7 @@ function cycleLibraryCategory(id) {
   if (!song) return;
   const currentIdx = order.indexOf(song.category);
   const next = order[(currentIdx + 1) % order.length];
-  song.category = next;
-  saveSongLibrary(library);
-  renderLibrary();
+  db.collection('songs').doc(id).update({ category: next }).catch(err => console.error('Error updating category:', err));
   showToast(`Set "${song.title}" as ${next}`);
 }
 
@@ -2526,11 +2569,9 @@ function deleteFromLibrary(id) {
 
   if (!confirm(`Remove "${song.title}" from your library?`)) return;
 
-  const updated = library.filter(s => s.id !== id);
-  saveSongLibrary(updated);
-  renderLibrary();
-  renderLibraryPicks();
+  db.collection('songs').doc(id).delete().catch(err => console.error('Error deleting song:', err));
   showToast(`Removed "${song.title}"`);
+  // UI updates happen automatically via onSnapshot listener
 }
 
 // ============================================================
@@ -2751,16 +2792,18 @@ function importLibrary(event) {
 
       const library = getSongLibrary();
       let added = 0;
+      const batch = db.batch();
 
       for (const song of imported) {
         if (!song.title || !song.lyrics) continue;
         const exists = library.find(s => s.title.toLowerCase() === song.title.toLowerCase());
         if (!exists) {
-          library.push({
-            id: song.id || Date.now().toString() + Math.random().toString(36).slice(2),
+          const ref = db.collection('songs').doc();
+          batch.set(ref, {
             title: song.title,
             artist: song.artist || '',
             lyrics: song.lyrics,
+            category: song.category || '',
             createdAt: song.createdAt || new Date().toISOString(),
             updatedAt: song.updatedAt || new Date().toISOString()
           });
@@ -2768,10 +2811,12 @@ function importLibrary(event) {
         }
       }
 
-      saveSongLibrary(library);
-      renderLibrary();
-      renderLibraryPicks();
-      showToast(`Imported ${added} new song${added !== 1 ? 's' : ''}!`);
+      batch.commit().then(() => {
+        showToast(`Imported ${added} new song${added !== 1 ? 's' : ''}!`);
+      }).catch(err => {
+        console.error('Import error:', err);
+        showToast('Error importing songs');
+      });
     } catch(err) {
       showToast('Invalid library file');
     }
