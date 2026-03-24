@@ -1,0 +1,2835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Young Life Club - Slide Maker</title>
+<script src="https://cdn.jsdelivr.net/gh/gitbrent/PptxGenJS@3.12.0/dist/pptxgen.bundle.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --yl-red: #003B5B;
+    --yl-red-dark: #002A42;
+    --yl-red-light: #245B91;
+    --bg: #0F1117;
+    --bg-card: #1A1D27;
+    --bg-card-hover: #222632;
+    --bg-input: #13151D;
+    --border: #2A2E3B;
+    --text: #F0F0F5;
+    --text-muted: #8B8FA3;
+    --accent: #92C83E;
+    --accent-glow: rgba(146, 200, 62, 0.15);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: linear-gradient(135deg, var(--yl-red-dark) 0%, var(--yl-red) 50%, var(--yl-red-light) 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0, 59, 91, 0.4);
+  }
+  .header h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.5px;
+  }
+  .header p { color: rgba(255,255,255,0.85); font-size: 0.9rem; }
+  .header-right { text-align: right; }
+
+  /* Layout */
+  .app-container {
+    display: flex;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-nav {
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
+  .sidebar-queue-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+    overflow: hidden;
+    border-top: none;
+  }
+  .queue-resize-handle {
+    height: 10px;
+    cursor: ns-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .queue-resize-handle:hover, .queue-resize-handle.resizing {
+    background: var(--accent);
+  }
+  .queue-resize-handle::after {
+    content: '';
+    width: 40px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--text-muted);
+  }
+  .queue-resize-handle:hover::after, .queue-resize-handle.resizing::after {
+    background: #fff;
+  }
+  .sidebar-queue-wrapper .queue-header {
+    padding: 0.55rem 1rem;
+    margin: 0.6rem 0.6rem 0;
+    background: #92C83E;
+    border: none;
+    border-radius: 10px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+  .sidebar-queue-wrapper .queue-header h3 {
+    margin: 0;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #FFFFFF;
+    font-weight: 700;
+  }
+  .queue-empty-drop {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    margin: 0.4rem 0.6rem;
+    border: 2px dashed rgba(146,200,62,0.3);
+    border-radius: 10px;
+    text-align: center;
+    color: var(--text-muted);
+    transition: all 0.2s;
+  }
+  .queue-empty-drop:hover {
+    border-color: rgba(146,200,62,0.5);
+    background: rgba(146,200,62,0.05);
+  }
+  .sidebar-export {
+    padding: 0.8rem 1.2rem;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .sidebar-section {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-section h3 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+    margin-bottom: 0.8rem;
+  }
+
+  .slide-type-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    margin-bottom: 0.3rem;
+  }
+  .slide-type-btn:hover { background: var(--bg-card-hover); }
+  .slide-type-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: white;
+  }
+  .slide-type-btn .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* Slide Queue */
+  .queue-section { overflow-y: auto; flex: 1; min-height: 0; transition: all 0.2s; }
+  .queue-section.drag-over {
+    background: rgba(146, 200, 62, 0.1);
+    border: 2px dashed var(--accent);
+    border-radius: 8px;
+    min-height: 60px;
+  }
+  .library-card[draggable="true"] { cursor: grab; }
+  .library-card[draggable="true"]:active { cursor: grabbing; }
+  .queue-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.8rem;
+    margin: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: grab;
+    transition: background 0.15s, transform 0.15s, opacity 0.15s;
+    user-select: none;
+  }
+  .queue-item:hover { background: rgba(255,255,255,0.08); }
+  .queue-item:active { cursor: grabbing; }
+  .queue-item.dragging {
+    opacity: 0.4;
+    transform: scale(0.95);
+  }
+  .queue-item.drag-over-item {
+    border-top: 2px solid var(--accent);
+    margin-top: 0;
+  }
+  .queue-item .q-num {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.6rem; font-weight: 700; flex-shrink: 0;
+  }
+  .queue-item .q-type {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+  }
+  .queue-item .q-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--text);
+  }
+  .queue-item .q-remove {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .queue-item .q-remove:hover { color: var(--yl-red); background: rgba(0,59,91,0.1); }
+
+  /* Main content */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem;
+  }
+
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.8rem;
+    margin-bottom: 1.5rem;
+  }
+  .panel h2 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .panel .subtitle {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  input[type="text"], textarea, select {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .form-group { margin-bottom: 1rem; }
+
+  /* Buttons */
+  .btn {
+    padding: 0.65rem 1.3rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-primary {
+    background: var(--yl-red);
+    color: white;
+  }
+  .btn-primary:hover { background: var(--yl-red-light); transform: translateY(-1px); }
+  .btn-secondary {
+    background: var(--bg-card-hover);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-large {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+  .btn-export {
+    background: linear-gradient(135deg, var(--yl-red-dark), var(--yl-red));
+    color: white;
+    width: 100%;
+    justify-content: center;
+    padding: 1rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 59, 91, 0.3);
+  }
+  .btn-export:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 59, 91, 0.4);
+  }
+
+  /* Theme selector */
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .theme-card {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .theme-card:hover { border-color: var(--text-muted); }
+  .theme-card.selected { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  .theme-preview {
+    height: 60px;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+  }
+  .theme-card .theme-name { font-size: 0.75rem; color: var(--text-muted); }
+
+  /* Song search */
+  .search-container {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+  .search-container input { flex: 1; }
+  .search-results {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    display: none;
+  }
+  .search-results.show { display: block; }
+  .search-result-item {
+    padding: 0.6rem 0.9rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .search-result-item:hover { background: var(--bg-card-hover); }
+  .search-result-item:last-child { border-bottom: none; }
+  .search-result-item .artist { color: var(--text-muted); font-size: 0.75rem; }
+
+  /* Lyrics display */
+  .lyrics-sections {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin: 1rem 0;
+    display: none;
+  }
+  .lyrics-sections.show { display: block; }
+  .lyric-section {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .lyric-section:last-child { border-bottom: none; }
+  .lyric-section .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.3rem;
+  }
+  .lyric-section .section-text {
+    white-space: pre-line;
+    color: var(--text);
+  }
+
+  /* Slide preview */
+  .slide-preview-bar {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    margin: 1rem 0;
+  }
+  .slide-mini {
+    width: 120px;
+    height: 67px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    text-align: center;
+    padding: 4px;
+    color: white;
+    border: 2px solid transparent;
+    cursor: pointer;
+    overflow: hidden;
+    line-height: 1.3;
+  }
+
+  /* Color picker row */
+  .color-row {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+  }
+  .color-row input[type="color"] {
+    width: 36px;
+    height: 36px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+    background: var(--bg-input);
+  }
+  .color-row span { font-size: 0.85rem; }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: #1DB954;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 100;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Tabs for song input */
+  .input-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.2rem;
+    border-bottom: 2px solid var(--border);
+  }
+  .input-tab {
+    padding: 0.6rem 1.2rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+  }
+  .input-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .input-tab:hover { color: var(--text); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+  }
+  .empty-state .big-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+  /* Helper text */
+  .help-text {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+    font-style: italic;
+  }
+
+  /* Font selector */
+  .font-option {
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 0.3rem;
+    transition: all 0.1s;
+    font-size: 0.85rem;
+  }
+  .font-option:hover { border-color: var(--text-muted); }
+  .font-option.selected { border-color: var(--accent); background: var(--accent-glow); }
+
+  /* Custom background inputs */
+  .custom-theme-section {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Responsive - Tablet */
+  @media (max-width: 900px) {
+    .app-container { flex-direction: column; height: auto; overflow: visible; }
+    .sidebar { width: 100%; min-width: auto; max-height: none; flex-direction: column; }
+    .sidebar-nav { overflow-x: auto; overflow-y: hidden; }
+    .sidebar-nav .sidebar-section { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.8rem; border-bottom: 1px solid var(--border); }
+    .sidebar-nav .sidebar-section h3 { width: 100%; margin-bottom: 0.3rem; }
+    .sidebar-nav .slide-type-btn { width: auto; flex: 0 0 auto; padding: 0.5rem 0.7rem; font-size: 0.8rem; margin-bottom: 0; }
+    .sidebar-nav .slide-type-btn .icon { width: 24px; height: 24px; font-size: 0.8rem; }
+    .sidebar-queue-wrapper { min-height: auto; max-height: 200px; }
+    .queue-resize-handle { display: none; }
+    .main-content { padding: 1rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .panel { padding: 1.2rem; }
+  }
+
+  /* Responsive - Mobile */
+  @media (max-width: 600px) {
+    .header { padding: 1rem; flex-direction: column; align-items: flex-start; gap: 0.3rem; }
+    .header h1 { font-size: 1.3rem; }
+    .header h1 span[style*="font-size"] { font-size: 0.55em !important; }
+    .header p { font-size: 0.8rem; }
+    .header-right { text-align: left; }
+    .app-container { flex-direction: column; height: auto; overflow: visible; }
+    .sidebar { width: 100%; min-width: auto; max-height: none; }
+    .sidebar-nav .sidebar-section { padding: 0.6rem; gap: 0.25rem; }
+    .sidebar-nav .slide-type-btn { padding: 0.4rem 0.6rem; font-size: 0.75rem; gap: 0.4rem; }
+    .sidebar-nav .slide-type-btn .icon { width: 22px; height: 22px; font-size: 0.75rem; border-radius: 5px; }
+    .sidebar-queue-wrapper { min-height: auto; max-height: 160px; }
+    .queue-resize-handle { display: none; }
+    .queue-empty-drop { padding: 0.6rem; min-height: auto; }
+    .main-content { padding: 0.75rem; }
+    .panel { padding: 1rem; border-radius: 10px; margin-bottom: 1rem; }
+    .panel h2 { font-size: 1.1rem; }
+    .panel .subtitle { font-size: 0.8rem; margin-bottom: 1rem; }
+    .form-row { grid-template-columns: 1fr; gap: 0.75rem; }
+    .search-container { flex-direction: column; gap: 0.5rem; }
+    .search-container input { width: 100%; }
+    .btn { padding: 0.6rem 1rem; font-size: 0.8rem; }
+    .btn-large { padding: 0.8rem 1.5rem; font-size: 0.9rem; }
+    .btn-export { padding: 0.8rem; font-size: 0.9rem; }
+    .sidebar-export { padding: 0.6rem 0.8rem; }
+    .theme-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 0.5rem; }
+    .theme-card { padding: 0.6rem; }
+    .theme-preview { height: 45px; font-size: 0.65rem; }
+    .song-chip { padding: 0.3rem 0.6rem; font-size: 0.75rem; }
+    .cat-selector { flex-wrap: wrap; }
+    .cat-option { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+    .library-card { padding: 0.6rem 0.8rem; gap: 0.6rem; flex-wrap: wrap; }
+    .library-card .lib-actions { width: 100%; justify-content: flex-end; }
+    textarea { min-height: 100px; font-size: 0.85rem; }
+    .toast { bottom: 1rem; right: 1rem; left: 1rem; text-align: center; font-size: 0.85rem; }
+    .slide-preview-bar { gap: 0.3rem; }
+    .slide-mini { width: 90px; height: 50px; font-size: 0.5rem; }
+    .color-row { flex-wrap: wrap; }
+    .input-tabs { overflow-x: auto; }
+    .input-tab { padding: 0.5rem 0.8rem; font-size: 0.8rem; white-space: nowrap; }
+    .lyrics-sections { font-size: 0.8rem; }
+  }
+
+  /* Top songs chips */
+  .song-chip {
+    padding: 0.4rem 0.8rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .song-chip:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .song-chip .chip-count {
+    background: var(--accent);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+  }
+
+  /* Library cards */
+  .library-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem 1rem;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    transition: all 0.15s;
+  }
+  .library-card:hover { border-color: var(--text-muted); }
+  .library-card .lib-info { flex: 1; }
+  .library-card .lib-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .library-card .lib-artist {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .library-card .lib-meta {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+  .library-card .lib-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .library-card .lib-actions button {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+  .library-card .lib-actions button:hover { border-color: var(--accent); color: var(--accent); }
+  .library-card .lib-actions button.lib-delete:hover { border-color: #EF4444; color: #EF4444; }
+
+  /* Move buttons in queue */
+  .q-drag-handle {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+    cursor: grab;
+    padding: 0 2px;
+    letter-spacing: 1px;
+  }
+  .q-drag-handle:active { cursor: grabbing; }
+
+  /* Library category filter buttons */
+  .cat-filter-btn {
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.15s;
+  }
+  .cat-filter-btn:hover { border-color: var(--text-muted); color: var(--text); }
+  .cat-filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+  .cat-filter-btn[style*="--cat-color"].active {
+    background: var(--cat-color);
+    border-color: var(--cat-color);
+    color: white;
+  }
+
+  /* Song category badges */
+  .cat-badge {
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .cat-fast { background: #EF444433; color: #F87171; }
+  .cat-medium { background: #F59E0B33; color: #FBBF24; }
+  .cat-content { background: #3B82F633; color: #60A5FA; }
+
+  /* Category selector */
+  .cat-selector {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  .cat-option {
+    padding: 0.4rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .cat-option:hover { border-color: var(--text-muted); color: var(--text); }
+  .cat-option.selected { border-color: var(--accent); color: white; background: var(--accent-glow); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div style="display:flex; align-items:center; gap:1rem;">
+    <div>
+      <h1><span style="color:#FFFFFF;">Young</span><span style="color:#92C83E;">life</span> <span style="font-size:0.6em; font-weight:500; color:rgba(255,255,255,0.85);">Palmetto Region</span></h1>
+      <p>Club Night Slide Maker</p>
+    </div>
+  </div>
+</div>
+
+<div class="app-container">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <!-- Nav buttons (scrollable, shrinks when queue has items) -->
+    <div class="sidebar-nav">
+      <div class="sidebar-section">
+        <h3>Add Slides</h3>
+        <button class="slide-type-btn active" onclick="showPanel('song')" id="btn-song">
+          <span class="icon" style="background:#7C3AED22; color:#A78BFA;">&#9835;</span>
+          Add a Song
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('library')" id="btn-library">
+          <span class="icon" style="background:#F9731622; color:#FB923C;">&#9776;</span>
+          Song Library
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('title')" id="btn-title">
+          <span class="icon" style="background:#F59E0B22; color:#FBBF24;">&#9733;</span>
+          Title / Welcome
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('mixer')" id="btn-mixer">
+          <span class="icon" style="background:#8B5CF622; color:#A78BFA;">&#9733;</span>
+          Mixer Title
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('names')" id="btn-names">
+          <span class="icon" style="background:#06B6D422; color:#22D3EE;">&#9997;</span>
+          Name Slide
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('announce')" id="btn-announce">
+          <span class="icon" style="background:#3B82F622; color:#60A5FA;">&#9998;</span>
+          Announcement
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('scripture')" id="btn-scripture">
+          <span class="icon" style="background:#10B98122; color:#34D399;">&#10016;</span>
+          Club Talk
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('video')" id="btn-video">
+          <span class="icon" style="background:#EF444422; color:#F87171;">&#9654;</span>
+          YouTube Video
+        </button>
+        <button class="slide-type-btn" onclick="showPanel('theme')" id="btn-theme">
+          <span class="icon" style="background:#EC489922; color:#F472B6;">&#9861;</span>
+          Theme Settings
+        </button>
+      </div>
+    </div>
+
+    <!-- Resize handle -->
+    <div class="queue-resize-handle" id="queueResizeHandle" title="Drag to resize"></div>
+
+    <!-- Queue (always visible, scrollable) -->
+    <div class="sidebar-queue-wrapper" id="sidebarQueueWrapper">
+      <div class="queue-header">
+        <h3>Your Club Matrix</h3>
+      </div>
+      <span id="slideCount" style="display:none;">0</span>
+      <div class="queue-section" id="slideQueue">
+        <div class="queue-empty-drop">
+          <div style="font-size:1.3rem; margin-bottom:0.3rem;">&#128196;</div>
+          <div style="font-size:0.75rem; font-weight:600; color:rgba(146,200,62,0.7);">Drag songs here</div>
+          <div style="font-size:0.65rem; margin-top:0.15rem;">or add slides from the menu above</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Export button (always pinned at bottom) -->
+    <div class="sidebar-export">
+      <button class="btn btn-export" onclick="exportPresentation()">
+        Export PowerPoint
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+
+    <!-- Song Lyrics Panel -->
+    <div class="panel" id="panel-song">
+      <h2>&#9835; Add a Song</h2>
+      <p class="subtitle">Add the song name, artist, and paste lyrics to create slides</p>
+
+      <!-- Step 1: Song Name & Artist -->
+      <div class="form-group">
+        <label>Step 1 — Song Name &amp; Artist</label>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:0;">
+            <input type="text" id="songSearch" placeholder="Song title (e.g. Love Story)">
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <input type="text" id="songArtist" placeholder="Artist (e.g. Taylor Swift)">
+          </div>
+        </div>
+      </div>
+
+      <div id="searchStatus" style="display:none; padding: 0.8rem 1rem; text-align:center; color: var(--text-muted); font-size:0.85rem; background: var(--bg-input); border-radius: 8px; margin-bottom:1rem;"></div>
+
+      <!-- Step 2: Lyrics -->
+      <div class="form-group">
+        <label>Step 2 — Copy &amp; Paste Lyrics</label>
+        <textarea id="searchLyrics" rows="12" placeholder="Paste lyrics here..."></textarea>
+      </div>
+
+
+      <div class="form-group">
+        <label>Song Type</label>
+        <div class="cat-selector" id="catSelector">
+          <button class="cat-option selected" onclick="selectCategory('fast')">Fast Song</button>
+          <button class="cat-option" onclick="selectCategory('medium')">Medium Song</button>
+          <button class="cat-option" onclick="selectCategory('content')">Content Song</button>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:0.6rem;">
+        <button class="btn btn-primary btn-large" onclick="addSongFromSearch()" style="flex:1; justify-content:center;">Add Song Slides</button>
+        <button class="btn btn-secondary btn-large" onclick="saveToLibrary()" style="justify-content:center;" title="Save this song to your library for quick reuse">Save to Library</button>
+      </div>
+    </div>
+
+    <!-- Song Library Panel -->
+    <div class="panel" id="panel-library" style="display:none;">
+      <h2>&#9776; Song Library</h2>
+      <p class="subtitle">Your saved songs — click any song to load it instantly</p>
+
+      <div style="display:flex; gap:0.6rem; margin-bottom:0.8rem; flex-wrap:wrap;">
+        <input type="text" id="librarySearchInput" placeholder="Filter songs..." oninput="renderLibrary()" style="flex:1; min-width:150px;">
+        <button class="btn btn-secondary" onclick="exportLibrary()">Export Library</button>
+        <button class="btn btn-secondary" onclick="document.getElementById('importLibraryFile').click()">Import Library</button>
+        <input type="file" id="importLibraryFile" accept=".json" style="display:none;" onchange="importLibrary(event)">
+      </div>
+
+      <div style="display:flex; gap:0.4rem; margin-bottom:1rem;" id="libCatFilter">
+        <button class="cat-filter-btn active" onclick="filterLibrary('all')">All</button>
+        <button class="cat-filter-btn" onclick="filterLibrary('fast')" style="--cat-color:#EF4444;">Fast</button>
+        <button class="cat-filter-btn" onclick="filterLibrary('medium')" style="--cat-color:#EFC500;">Medium</button>
+        <button class="cat-filter-btn" onclick="filterLibrary('content')" style="--cat-color:#4785C0;">Content</button>
+      </div>
+
+      <div id="libraryList"></div>
+
+      <div id="libraryEmpty" style="display:none;" class="empty-state">
+        <div class="big-icon">&#128218;</div>
+        <div>No songs saved yet</div>
+        <div style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">
+          Add songs from the Song Lyrics tab and click "Save to Library"
+        </div>
+      </div>
+    </div>
+
+    <!-- Mixer Title Panel -->
+    <div class="panel" id="panel-mixer" style="display:none;">
+      <h2>&#9733; Mixer Title Slide</h2>
+      <p class="subtitle">Add a title card for your mixer game or activity</p>
+
+      <div class="form-group">
+        <label>Mixer Name</label>
+        <input type="text" id="mixerTitle" placeholder="e.g. Human Knot">
+      </div>
+      <div class="form-group">
+        <label>Instructions (optional)</label>
+        <textarea id="mixerInstructions" rows="3" placeholder="e.g. Get in groups of 8. Grab hands across the circle. Untangle without letting go!"></textarea>
+      </div>
+      <div style="display:flex; gap:0.6rem; align-items:center;">
+        <button class="btn btn-primary" onclick="addMixerSlide()">Add Mixer Slide</button>
+        <button class="btn btn-secondary" onclick="previewSlide('mixer')">Show Preview</button>
+      </div>
+      <div id="preview-mixer" style="display:none; margin-top:1rem;"></div>
+    </div>
+
+    <!-- Name Slide Panel -->
+    <div class="panel" id="panel-names" style="display:none;">
+      <h2>&#9997; Name Slide</h2>
+      <p class="subtitle">Adds a slide with 6 numbered blanks — fill in names right before club starts</p>
+
+      <div class="form-group">
+        <label>Slide Title</label>
+        <input type="text" id="namesTitle" placeholder="e.g. Who's Who?" value="Names">
+      </div>
+      <p class="help-text">This creates a slide with blanks numbered 1–6. The projector person types in names right before club.</p>
+      <div style="display:flex; gap:0.6rem; align-items:center; margin-top:1rem;">
+        <button class="btn btn-primary" onclick="addNameSlide()">Add Name Slide</button>
+        <button class="btn btn-secondary" onclick="previewSlide('names')">Show Preview</button>
+      </div>
+      <div id="preview-names" style="display:none; margin-top:1rem;"></div>
+    </div>
+
+    <!-- Title/Welcome Panel -->
+    <div class="panel" id="panel-title" style="display:none;">
+      <h2>&#9733; Title / Welcome Slide</h2>
+      <p class="subtitle">Create a branded intro slide for your club night</p>
+
+      <div class="form-group">
+        <label>Main Title</label>
+        <input type="text" id="titleMain" placeholder="e.g. Young Life Club Night">
+      </div>
+      <div class="form-group">
+        <label>Subtitle</label>
+        <input type="text" id="titleSub" placeholder="e.g. March 23, 2026 — Spring Kickoff">
+      </div>
+      <div class="form-group">
+        <label>Extra Text (optional)</label>
+        <input type="text" id="titleExtra" placeholder="e.g. Welcome! Grab some food and find a seat.">
+      </div>
+      <div style="display:flex; gap:0.6rem; align-items:center;">
+        <button class="btn btn-primary" onclick="addTitleSlide()">Add Title Slide</button>
+        <button class="btn btn-secondary" onclick="previewSlide('title')">Show Preview</button>
+      </div>
+      <div id="preview-title" style="display:none; margin-top:1rem;"></div>
+    </div>
+
+    <!-- Announcement Panel -->
+    <div class="panel" id="panel-announce" style="display:none;">
+      <h2>&#9998; Announcement Slide</h2>
+      <p class="subtitle">Share upcoming events, camp info, or reminders</p>
+
+      <div class="form-group">
+        <label>Heading</label>
+        <input type="text" id="announceHeading" placeholder="e.g. Upcoming Events">
+      </div>
+      <div class="form-group">
+        <label>Announcement Text</label>
+        <textarea id="announceText" rows="6" placeholder="e.g. Summer Camp — June 15-20&#10;Sign up by April 1st!&#10;Cost: $350 (scholarships available)"></textarea>
+        <p class="help-text">Each line will appear as a separate line on the slide.</p>
+      </div>
+      <button class="btn btn-primary" onclick="addAnnouncementSlide()">Add Announcement Slide</button>
+    </div>
+
+    <!-- Club Talk Panel -->
+    <div class="panel" id="panel-scripture" style="display:none;">
+      <h2>&#10016; Club Talk Slide</h2>
+      <p class="subtitle">Display a verse, quote, or key point for the club talk</p>
+
+      <div class="form-group">
+        <label>Quote / Verse Text</label>
+        <textarea id="scriptureText" rows="4" placeholder='e.g. "For I know the plans I have for you," declares the Lord, "plans to prosper you and not to harm you, plans to give you hope and a future."'></textarea>
+      </div>
+      <div class="form-group">
+        <label>Reference / Attribution</label>
+        <input type="text" id="scriptureRef" placeholder="e.g. Jeremiah 29:11">
+      </div>
+      <button class="btn btn-primary" onclick="addScriptureSlide()">Add Club Talk Slide</button>
+    </div>
+
+    <!-- YouTube Video Panel -->
+    <div class="panel" id="panel-video" style="display:none;">
+      <h2>&#9654; YouTube Video Slide</h2>
+      <p class="subtitle">Embed a YouTube video that plays right in PowerPoint — perfect for camp promos, worship videos, or hype clips</p>
+
+      <div class="form-group">
+        <label>Video Title</label>
+        <input type="text" id="videoTitle" placeholder="e.g. Summer Camp 2026 Promo">
+      </div>
+      <div class="form-group">
+        <label>YouTube URL</label>
+        <input type="text" id="videoUrl" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ">
+        <p class="help-text">Paste any YouTube link. The video will be embedded in the slide — just click play in PowerPoint.</p>
+      </div>
+      <div class="form-group">
+        <label>Description (optional)</label>
+        <input type="text" id="videoDesc" placeholder="e.g. Play this video before worship set">
+      </div>
+      <div id="videoThumbnailPreview" style="margin-bottom:1rem; display:none;">
+        <label>Thumbnail Preview</label>
+        <img id="videoThumb" style="width:100%; max-width:320px; border-radius:8px; border:1px solid var(--border);">
+      </div>
+      <button class="btn btn-primary" onclick="addVideoSlide()">Add Video Slide</button>
+    </div>
+
+    <!-- Theme Settings Panel -->
+    <div class="panel" id="panel-theme" style="display:none;">
+      <h2>&#9861; Theme Settings</h2>
+      <p class="subtitle">Customize the look of your presentation</p>
+
+      <div class="form-group">
+        <label>Preset Themes</label>
+        <div class="theme-grid" id="themeGrid"></div>
+      </div>
+
+      <div class="custom-theme-section">
+        <label>Custom Colors</label>
+        <div class="color-row">
+          <input type="color" id="customBg" value="#1a1a2e" onchange="applyCustomTheme()">
+          <span>Background Color</span>
+        </div>
+        <div class="color-row">
+          <input type="color" id="customText" value="#ffffff" onchange="applyCustomTheme()">
+          <span>Text Color</span>
+        </div>
+        <div class="color-row">
+          <input type="color" id="customAccent" value="#C41E3A" onchange="applyCustomTheme()">
+          <span>Accent Color</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top:1rem;">
+        <label>Font</label>
+        <select id="fontSelect" onchange="updateFont()">
+          <option value="Arial">Arial</option>
+          <option value="Arial Black">Arial Black</option>
+          <option value="Calibri" selected>Calibri</option>
+          <option value="Cambria">Cambria</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Impact">Impact</option>
+          <option value="Trebuchet MS">Trebuchet MS</option>
+          <option value="Palatino">Palatino</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Background Image URL (optional)</label>
+        <input type="text" id="bgImageUrl" placeholder="https://example.com/background.jpg" onchange="updateBgImage()">
+        <p class="help-text">Use a direct image URL. Dark, subtle images work best. Leave empty for solid color.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let slideQueue = [];
+let selectedCategory = 'fast';
+let currentTheme = {
+  name: 'Black & White',
+  bg: '000000',
+  text: 'FFFFFF',
+  accent: 'FFFFFF',
+  font: 'Calibri',
+  bgImage: ''
+};
+
+const themes = [
+  { name: 'Black & White', bg: '000000', text: 'FFFFFF', accent: 'FFFFFF', preview: 'linear-gradient(135deg, #000000, #222222)' },
+  { name: 'YL Dark Teal',  bg: '003B5B', text: 'FFFFFF', accent: '92C83E', preview: 'linear-gradient(135deg, #003B5B, #264B6F)' },
+  { name: 'YL Green',      bg: '1B2D1B', text: 'FFFFFF', accent: '92C83E', preview: 'linear-gradient(135deg, #264B6F, #5A9B32)' },
+  { name: 'YL Blue',       bg: '245B91', text: 'FFFFFF', accent: 'EFC500', preview: 'linear-gradient(135deg, #245B91, #4785C0)' },
+  { name: 'YL Sunset',     bg: '264B6F', text: 'FFFFFF', accent: 'F95E0A', preview: 'linear-gradient(135deg, #264B6F, #F0920A)' },
+  { name: 'YL Gold',       bg: '003B5B', text: 'FFFFFF', accent: 'EFC500', preview: 'linear-gradient(135deg, #003B5B, #EFC500)' },
+  { name: 'Midnight',      bg: '1A1A2E', text: 'FFFFFF', accent: 'E94560', preview: 'linear-gradient(135deg, #1A1A2E, #16213E)' },
+  { name: 'Clean White',   bg: 'FFFFFF', text: '222222', accent: '003B5B', preview: 'linear-gradient(135deg, #FFFFFF, #F0F0F0)' },
+  { name: 'Dark Gray',     bg: '2C2C34', text: 'F5F5F5', accent: '92C83E', preview: 'linear-gradient(135deg, #2C2C34, #3D3D48)' },
+];
+
+// ============================================================
+// INIT
+// ============================================================
+function init() {
+  renderThemeGrid();
+  selectTheme(0);
+  renderTopSongs();
+  renderLibraryPicks();
+  renderLibrary();
+}
+
+// ============================================================
+// PANEL NAV
+// ============================================================
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+  document.querySelectorAll('.slide-type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).style.display = 'block';
+  document.getElementById('btn-' + name).classList.add('active');
+}
+
+// ============================================================
+// THEME
+// ============================================================
+function renderThemeGrid() {
+  const grid = document.getElementById('themeGrid');
+  grid.innerHTML = themes.map((t, i) => `
+    <div class="theme-card" onclick="selectTheme(${i})" id="theme-${i}">
+      <div class="theme-preview" style="background:${t.preview}; color:#${t.text};">Aa</div>
+      <div class="theme-name">${t.name}</div>
+    </div>
+  `).join('');
+}
+
+function selectTheme(idx) {
+  const t = themes[idx];
+  currentTheme.name = t.name;
+  currentTheme.bg = t.bg;
+  currentTheme.text = t.text;
+  currentTheme.accent = t.accent;
+
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+  const el = document.getElementById('theme-' + idx);
+  if (el) el.classList.add('selected');
+
+  document.getElementById('customBg').value = '#' + t.bg;
+  document.getElementById('customText').value = '#' + t.text;
+  document.getElementById('customAccent').value = '#' + t.accent;
+}
+
+function applyCustomTheme() {
+  currentTheme.bg = document.getElementById('customBg').value.replace('#', '');
+  currentTheme.text = document.getElementById('customText').value.replace('#', '');
+  currentTheme.accent = document.getElementById('customAccent').value.replace('#', '');
+  currentTheme.name = 'Custom';
+  document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('selected'));
+}
+
+function updateFont() {
+  currentTheme.font = document.getElementById('fontSelect').value;
+}
+
+function updateBgImage() {
+  currentTheme.bgImage = document.getElementById('bgImageUrl').value.trim();
+}
+
+// ============================================================
+// AUTO-FORMAT LYRICS ON PASTE
+// ============================================================
+const SLIDE_BREAK = '---------- Slide Break ----------';
+
+function formatLyricsWithBreaks(text) {
+  if (!text.trim()) return text;
+
+  // Strip any existing slide break markers
+  const cleaned = text.replace(/^-{5,}.*Slide\s*Break.*-{0,}$/gim, '').trim();
+
+  // Split by double newlines (section breaks)
+  const rawSections = cleaned.split(/\n\s*\n/);
+  const outputLines = [];
+
+  for (const section of rawSections) {
+    const lines = section.trim().split('\n').filter(l => l.trim());
+    if (lines.length === 0) continue;
+
+    // Check if first line is a section label
+    let label = '';
+    let contentLines = lines;
+    if (/^(verse|chorus|bridge|pre-chorus|outro|intro|tag|interlude|hook|refrain)\s*\d*/i.test(lines[0].trim())) {
+      label = lines[0].trim();
+      contentLines = lines.slice(1);
+    }
+
+    let firstChunk = true;
+    while (contentLines.length > 0) {
+      const chunk = contentLines.splice(0, 4);
+
+      // Add slide break before each chunk (except the very first one)
+      if (outputLines.length > 0) {
+        outputLines.push('');
+        outputLines.push(SLIDE_BREAK);
+        outputLines.push('');
+      }
+
+      // Add section label on first chunk
+      if (firstChunk && label) {
+        outputLines.push(label);
+        firstChunk = false;
+      }
+
+      outputLines.push(...chunk);
+    }
+  }
+
+  return outputLines.join('\n');
+}
+
+// Listen for paste events on the lyrics textarea
+document.addEventListener('DOMContentLoaded', function() {
+  const lyricsEl = document.getElementById('searchLyrics');
+  if (lyricsEl) {
+    lyricsEl.addEventListener('paste', function(e) {
+      e.preventDefault();
+      const pastedText = (e.clipboardData || window.clipboardData).getData('text');
+      const formatted = formatLyricsWithBreaks(pastedText);
+      // Insert at cursor or replace selection
+      const start = this.selectionStart;
+      const end = this.selectionEnd;
+      const before = this.value.substring(0, start);
+      const after = this.value.substring(end);
+      if (before.trim() === '' && after.trim() === '') {
+        // Empty field — just set the formatted text
+        this.value = formatted;
+      } else {
+        // Has existing content — insert raw paste at cursor
+        this.value = before + pastedText + after;
+      }
+      this.dispatchEvent(new Event('input'));
+    });
+  }
+});
+
+// Also format lyrics from Quick Search results
+function formatAndSetLyrics(lyrics) {
+  document.getElementById('searchLyrics').value = formatLyricsWithBreaks(lyrics);
+}
+
+// ============================================================
+// LYRICS PARSING
+// ============================================================
+function parseLyrics(text, maxLines) {
+  if (!text.trim()) return [];
+
+  // Strip slide break markers before parsing
+  const cleanText = text.replace(/^-{5,}.*Slide\s*Break.*-{0,}$/gim, '').trim();
+
+  // Split by double newlines (section breaks)
+  const rawSections = cleanText.split(/\n\s*\n/);
+  const sections = [];
+
+  for (const section of rawSections) {
+    const lines = section.trim().split('\n').filter(l => l.trim());
+    if (lines.length === 0) continue;
+
+    // Check if first line is a section label (e.g., "Verse 1", "Chorus", "Bridge")
+    let label = '';
+    let contentLines = lines;
+    if (/^(verse|chorus|bridge|pre-chorus|outro|intro|tag|interlude|hook|refrain)\s*\d*/i.test(lines[0].trim())) {
+      label = lines[0].trim();
+      contentLines = lines.slice(1);
+    }
+
+    // Split into chunks of maxLines
+    while (contentLines.length > 0) {
+      const chunk = contentLines.splice(0, maxLines);
+      sections.push({
+        label: label,
+        lines: chunk
+      });
+      label = ''; // Only first chunk gets the label
+    }
+  }
+
+  return sections;
+}
+
+// ============================================================
+// SONG SEARCH (lyrics.ovh API)
+// ============================================================
+async function searchSong() {
+  const title = document.getElementById('songSearch').value.trim();
+  const artist = document.getElementById('songArtist').value.trim();
+
+  if (!title) {
+    showToast('Please enter a song title');
+    return;
+  }
+
+  const statusEl = document.getElementById('searchStatus');
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Searching your library...';
+
+  // Check Song Library first
+  const library = getSongLibrary();
+  const match = library.find(s =>
+    s.title.toLowerCase().includes(title.toLowerCase()) ||
+    title.toLowerCase().includes(s.title.toLowerCase())
+  );
+
+  if (match) {
+    const catBadges = {
+      fast: '<span class="cat-badge cat-fast" style="margin-left:0.5rem;">Fast</span>',
+      medium: '<span class="cat-badge cat-medium" style="margin-left:0.5rem;">Medium</span>',
+      content: '<span class="cat-badge cat-content" style="margin-left:0.5rem;">Content</span>'
+    };
+    const badge = catBadges[match.category] || '';
+
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:1rem; text-align:left;">
+        <div>
+          <div style="font-size:1rem; font-weight:700; color:var(--text);">${match.title}${badge}</div>
+          <div style="font-size:0.8rem; color:var(--text-muted);">${match.artist || 'Unknown artist'}</div>
+        </div>
+        <div style="display:flex; gap:0.5rem; flex-shrink:0;">
+          <button class="btn btn-primary" style="padding:0.5rem 1.2rem; font-size:0.85rem;" onclick="addLibrarySongToQueue('${match.id}'); document.getElementById('searchStatus').style.display='none';">+ Add to Club Night</button>
+          <button class="btn btn-secondary" style="padding:0.5rem 1rem; font-size:0.85rem;" onclick="loadFromLibrary('${match.id}'); document.getElementById('searchStatus').style.display='none';">Edit</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Not in library — show message
+  statusEl.innerHTML = 'Not in your Song Library. Use the <strong>Google</strong> button above to find lyrics, then paste them below.';
+}
+
+// ============================================================
+// EXTERNAL LYRICS SEARCH (opens in new tab)
+// ============================================================
+function getSearchTerms() {
+  const title = document.getElementById('songSearch').value.trim();
+  const artist = document.getElementById('songArtist').value.trim();
+  if (!title && !artist) {
+    showToast('Enter a song title first');
+    return null;
+  }
+  return { title, artist };
+}
+
+function searchGoogle() {
+  const terms = getSearchTerms();
+  if (!terms) return;
+  const query = [terms.artist, terms.title, 'lyrics'].filter(Boolean).join(' ');
+  window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, '_blank');
+  showToast('Google opened — copy lyrics and paste below');
+}
+
+
+// ============================================================
+// CATEGORY SELECTOR
+// ============================================================
+function selectCategory(cat) {
+  selectedCategory = cat;
+  document.querySelectorAll('.cat-option').forEach(b => b.classList.remove('selected'));
+  event.target.classList.add('selected');
+}
+
+// ============================================================
+// ADD SLIDES TO QUEUE
+// ============================================================
+function addSongFromSearch() {
+  const title = document.getElementById('songSearch').value.trim() || 'Song';
+  const lyrics = document.getElementById('searchLyrics').value.trim();
+  const maxLines = 4;
+
+  if (!lyrics) {
+    showToast('Please add lyrics first — search or paste them above');
+    return;
+  }
+
+  addSongSlides(title, lyrics, maxLines);
+}
+
+function addMixerSlide() {
+  const title = document.getElementById('mixerTitle').value.trim();
+  const instructions = document.getElementById('mixerInstructions').value.trim();
+
+  if (!title) {
+    showToast('Please enter a mixer name');
+    return;
+  }
+
+  slideQueue.push({
+    type: 'mixer',
+    title: title,
+    instructions: instructions,
+    icon: '&#9733;'
+  });
+
+  renderQueue();
+  showToast('Mixer slide added');
+  document.getElementById('mixerTitle').value = '';
+  document.getElementById('mixerInstructions').value = '';
+}
+
+function addNameSlide() {
+  const title = document.getElementById('namesTitle').value.trim() || "Names";
+
+  slideQueue.push({
+    type: 'names',
+    title: title,
+    names: ['', '', '', '', '', ''],
+    icon: '&#9997;'
+  });
+
+  renderQueue();
+  showToast('Name slide added');
+}
+
+function addSongSlides(title, lyrics, maxLines, overrideCategory) {
+  const sections = parseLyrics(lyrics, maxLines);
+
+  if (sections.length === 0) {
+    showToast('No lyrics to add');
+    return;
+  }
+
+  // Track usage for Top Songs
+  trackSongUsage(title);
+
+  const category = overrideCategory || selectedCategory;
+
+  // Add a title slide for the song
+  slideQueue.push({
+    type: 'song-title',
+    title: title,
+    category: category,
+    icon: '&#9835;'
+  });
+
+  // Add each section
+  for (let i = 0; i < sections.length; i++) {
+    slideQueue.push({
+      type: 'song-lyrics',
+      title: title,
+      category: category,
+      label: sections[i].label,
+      lines: sections[i].lines,
+      slideNum: i + 1,
+      totalSlides: sections.length,
+      icon: '&#9835;'
+    });
+  }
+
+  renderQueue();
+  showToast(`Added "${title}" (${sections.length + 1} slides)`);
+}
+
+function addTitleSlide() {
+  const main = document.getElementById('titleMain').value.trim();
+  const sub = document.getElementById('titleSub').value.trim();
+  const extra = document.getElementById('titleExtra').value.trim();
+
+  if (!main) {
+    showToast('Please enter a main title');
+    return;
+  }
+
+  slideQueue.push({
+    type: 'title',
+    title: main,
+    subtitle: sub,
+    extra: extra,
+    icon: '&#9733;'
+  });
+
+  renderQueue();
+  showToast('Title slide added');
+  document.getElementById('titleMain').value = '';
+  document.getElementById('titleSub').value = '';
+  document.getElementById('titleExtra').value = '';
+}
+
+function previewSlide(type) {
+  const container = document.getElementById('preview-' + type);
+  if (!container) return;
+
+  // Toggle off if already showing
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    return;
+  }
+
+  const theme = { ...currentTheme };
+  const bgStyle = theme.bgImage
+    ? `background-image:url('${theme.bgImage}'); background-size:cover; background-position:center;`
+    : `background:#${theme.bg};`;
+
+  let content = '';
+
+  if (type === 'title') {
+    const main = document.getElementById('titleMain').value.trim() || 'Young Life Club Night';
+    const sub = document.getElementById('titleSub').value.trim();
+    const extra = document.getElementById('titleExtra').value.trim();
+    content = `
+      <div style="font-size:1.4rem; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:#${theme.text};">${main}</div>
+      ${sub ? `<div style="margin-top:0.5rem; font-size:0.8rem; color:#${theme.accent}; letter-spacing:1px;">${sub}</div>` : ''}
+      ${extra ? `<div style="margin-top:0.4rem; font-size:0.7rem; color:#${theme.text}; opacity:0.7;">${extra}</div>` : ''}
+    `;
+  } else if (type === 'mixer') {
+    const title = document.getElementById('mixerTitle').value.trim() || 'Mixer Name';
+    const instructions = document.getElementById('mixerInstructions').value.trim();
+    content = `
+      <div style="font-size:0.65rem; text-transform:uppercase; letter-spacing:2px; color:#${theme.accent}; margin-bottom:0.4rem;">MIXER</div>
+      <div style="font-size:1.4rem; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:#${theme.text};">${title}</div>
+      ${instructions ? `<div style="margin-top:0.6rem; font-size:0.65rem; color:#${theme.text}; opacity:0.8; line-height:1.5;">${instructions}</div>` : ''}
+    `;
+  } else if (type === 'names') {
+    const title = document.getElementById('namesTitle').value.trim() || "Names";
+    const blanks = [1,2,3,4,5,6].map(n => `<div style="display:flex; align-items:center; gap:0.4rem; margin:0.15rem 0;"><span style="color:#${theme.accent}; font-weight:700; font-size:0.7rem;">${n}.</span><span style="border-bottom:1px solid #${theme.text}44; width:60%; display:inline-block; height:0.8rem;"></span></div>`).join('');
+    content = `
+      <div style="font-size:1.1rem; font-weight:800; text-transform:uppercase; letter-spacing:2px; color:#${theme.text}; margin-bottom:0.5rem;">${title}</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.2rem 1.5rem;">${blanks}</div>
+    `;
+  }
+
+  container.innerHTML = `
+    <div style="position:relative; width:100%; aspect-ratio:16/9; ${bgStyle} border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:1.5rem; overflow:hidden; border:1px solid var(--border);">
+      ${content}
+      <div style="position:absolute; top:0.5rem; right:0.5rem; font-size:0.6rem; color:var(--text-muted); opacity:0.5;">PREVIEW</div>
+    </div>
+  `;
+  container.style.display = 'block';
+}
+
+function addAnnouncementSlide() {
+  const heading = document.getElementById('announceHeading').value.trim();
+  const text = document.getElementById('announceText').value.trim();
+
+  if (!heading && !text) {
+    showToast('Please enter announcement content');
+    return;
+  }
+
+  slideQueue.push({
+    type: 'announcement',
+    title: heading || 'Announcement',
+    text: text,
+    icon: '&#9998;'
+  });
+
+  renderQueue();
+  showToast('Announcement slide added');
+  document.getElementById('announceHeading').value = '';
+  document.getElementById('announceText').value = '';
+}
+
+function addVideoSlide() {
+  const title = document.getElementById('videoTitle').value.trim();
+  const url = document.getElementById('videoUrl').value.trim();
+  const desc = document.getElementById('videoDesc').value.trim();
+
+  if (!url) {
+    showToast('Please enter a YouTube URL');
+    return;
+  }
+
+  // Extract video ID for thumbnail
+  let videoId = '';
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  if (match) videoId = match[1];
+
+  slideQueue.push({
+    type: 'video',
+    title: title || 'Video',
+    url: url,
+    description: desc,
+    videoId: videoId,
+    thumbnailUrl: videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '',
+    icon: '&#9654;'
+  });
+
+  renderQueue();
+  showToast('Video slide added');
+  document.getElementById('videoTitle').value = '';
+  document.getElementById('videoUrl').value = '';
+  document.getElementById('videoDesc').value = '';
+  document.getElementById('videoThumbnailPreview').style.display = 'none';
+}
+
+// Show thumbnail preview when YouTube URL is entered
+document.addEventListener('DOMContentLoaded', function() {
+  const urlInput = document.getElementById('videoUrl');
+  if (urlInput) {
+    urlInput.addEventListener('input', function() {
+      const url = this.value.trim();
+      const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+      const previewEl = document.getElementById('videoThumbnailPreview');
+      const thumbEl = document.getElementById('videoThumb');
+      if (match) {
+        thumbEl.src = `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+        previewEl.style.display = 'block';
+      } else {
+        previewEl.style.display = 'none';
+      }
+    });
+  }
+});
+
+function addScriptureSlide() {
+  const text = document.getElementById('scriptureText').value.trim();
+  const ref = document.getElementById('scriptureRef').value.trim();
+
+  if (!text) {
+    showToast('Please enter a verse or quote');
+    return;
+  }
+
+  slideQueue.push({
+    type: 'scripture',
+    title: ref || 'Scripture',
+    text: text,
+    reference: ref,
+    icon: '&#10016;'
+  });
+
+  renderQueue();
+  showToast('Scripture slide added');
+  document.getElementById('scriptureText').value = '';
+  document.getElementById('scriptureRef').value = '';
+}
+
+// ============================================================
+// QUEUE RENDERING (grouped view — songs show as one entry)
+// ============================================================
+
+// Build grouped items from the flat slideQueue
+function getQueueGroups() {
+  const groups = [];
+  let i = 0;
+  while (i < slideQueue.length) {
+    const slide = slideQueue[i];
+    if (slide.type === 'song-title') {
+      // Collect consecutive song-lyrics with the same title
+      const startIdx = i;
+      const songTitle = slide.title;
+      i++;
+      while (i < slideQueue.length && slideQueue[i].type === 'song-lyrics' && slideQueue[i].title === songTitle) {
+        i++;
+      }
+      const slideCount = i - startIdx;
+      groups.push({
+        type: 'song',
+        title: songTitle,
+        category: slide.category,
+        startIdx: startIdx,
+        endIdx: i - 1,
+        slideCount: slideCount
+      });
+    } else if (slide.type === 'song-lyrics') {
+      // Orphan lyric slide (shouldn't happen but handle it)
+      groups.push({
+        type: 'song',
+        title: slide.title,
+        category: slide.category,
+        startIdx: i,
+        endIdx: i,
+        slideCount: 1
+      });
+      i++;
+    } else {
+      groups.push({
+        type: slide.type,
+        title: slide.title,
+        startIdx: i,
+        endIdx: i,
+        slideCount: 1
+      });
+      i++;
+    }
+  }
+  return groups;
+}
+
+function renderQueue() {
+  const container = document.getElementById('slideQueue');
+  document.getElementById('slideCount').textContent = slideQueue.length;
+
+  if (slideQueue.length === 0) {
+    container.innerHTML = `
+      <div class="queue-empty-drop">
+        <div style="font-size:1.3rem; margin-bottom:0.3rem;">&#128196;</div>
+        <div style="font-size:0.75rem; font-weight:600; color:rgba(146,200,62,0.7);">Drag songs here</div>
+        <div style="font-size:0.65rem; margin-top:0.15rem;">or add slides from the menu above</div>
+      </div>
+    `;
+    return;
+  }
+
+  const groups = getQueueGroups();
+
+  container.innerHTML = groups.map((group, gi) => {
+    const typeLabels = {
+      'song': '&#9835; Song',
+      'title': '&#9733; Title Slide',
+      'announcement': '&#9998; Announcement',
+      'scripture': '&#10016; Club Talk',
+      'video': '&#9654; Video',
+      'mixer': '&#9733; Mixer',
+      'names': '&#9997; Name Game'
+    };
+
+    let catBadge = '';
+    if (group.category) {
+      const catLabels = { fast: 'Fast', medium: 'Medium', content: 'Content' };
+      catBadge = ` <span class="cat-badge cat-${group.category}">${catLabels[group.category]}</span>`;
+    }
+
+    const typeIcons = {
+      'song': '&#9835;',
+      'title': '&#9733;',
+      'announcement': '&#9998;',
+      'scripture': '&#10016;',
+      'video': '&#9654;',
+      'mixer': '&#127922;',
+      'names': '&#9997;'
+    };
+
+    const typeNames = {
+      'song': 'Song',
+      'title': 'Title Slide',
+      'announcement': 'Announcement',
+      'scripture': 'Club Talk',
+      'video': 'Video',
+      'mixer': 'Mixer',
+      'names': 'Name Slide'
+    };
+
+    return `
+      <div class="queue-item" draggable="true" data-group-idx="${gi}">
+        <span class="q-drag-handle">&#8942;&#8942;</span>
+        <span class="q-num">${gi + 1}</span>
+        <div style="flex:1; min-width:0;">
+          <div class="q-title">${group.title}</div>
+          <div class="q-type">${typeIcons[group.type] || ''} ${typeNames[group.type] || group.type} ${catBadge}</div>
+        </div>
+        <button class="q-remove" draggable="false" onmousedown="event.stopPropagation();" onclick="event.preventDefault(); event.stopPropagation(); removeGroup(${gi});" title="Remove">&times;</button>
+      </div>
+    `;
+  }).join('');
+
+  // Auto-scroll queue to bottom to show newest item
+  setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+
+  // Setup drag-to-reorder on queue items
+  setupQueueDragReorder();
+}
+
+function removeGroup(groupIdx) {
+  const groups = getQueueGroups();
+  if (groupIdx < 0 || groupIdx >= groups.length) return;
+  const group = groups[groupIdx];
+  slideQueue.splice(group.startIdx, group.endIdx - group.startIdx + 1);
+  renderQueue();
+}
+
+function moveGroup(groupIdx, direction) {
+  const groups = getQueueGroups();
+  const newGroupIdx = groupIdx + direction;
+  if (newGroupIdx < 0 || newGroupIdx >= groups.length) return;
+
+  const group = groups[groupIdx];
+  const neighbor = groups[newGroupIdx];
+
+  // Extract the group's slides
+  const groupSlides = slideQueue.splice(group.startIdx, group.endIdx - group.startIdx + 1);
+
+  // Recalculate insert position after removal
+  if (direction === -1) {
+    // Moving up: insert at the neighbor's original start index
+    slideQueue.splice(neighbor.startIdx, 0, ...groupSlides);
+  } else {
+    // Moving down: insert after the neighbor (neighbor shifted up after removal)
+    const insertAt = neighbor.startIdx - groupSlides.length + (neighbor.endIdx - neighbor.startIdx + 1);
+    slideQueue.splice(insertAt, 0, ...groupSlides);
+  }
+
+  renderQueue();
+}
+
+// ============================================================
+// DRAG-TO-REORDER QUEUE ITEMS
+// ============================================================
+let draggedGroupIdx = null;
+
+function setupQueueDragReorder() {
+  const container = document.getElementById('slideQueue');
+  const items = container.querySelectorAll('.queue-item[draggable="true"]');
+
+  items.forEach(item => {
+    item.addEventListener('dragstart', (e) => {
+      draggedGroupIdx = parseInt(item.dataset.groupIdx);
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'queue-reorder');
+    });
+
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      // Clear all drag-over highlights
+      container.querySelectorAll('.drag-over-item').forEach(el => el.classList.remove('drag-over-item'));
+      draggedGroupIdx = null;
+    });
+
+    item.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      const overIdx = parseInt(item.dataset.groupIdx);
+      if (draggedGroupIdx === null || overIdx === draggedGroupIdx) return;
+      e.dataTransfer.dropEffect = 'move';
+      // Clear previous highlights and highlight this one
+      container.querySelectorAll('.drag-over-item').forEach(el => el.classList.remove('drag-over-item'));
+      item.classList.add('drag-over-item');
+    });
+
+    item.addEventListener('dragleave', () => {
+      item.classList.remove('drag-over-item');
+    });
+
+    item.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const targetIdx = parseInt(item.dataset.groupIdx);
+      if (draggedGroupIdx === null || targetIdx === draggedGroupIdx) return;
+
+      // Reorder groups in the slideQueue
+      const groups = getQueueGroups();
+      const fromGroup = groups[draggedGroupIdx];
+      const toGroup = groups[targetIdx];
+
+      // Extract dragged group's slides
+      const movedSlides = slideQueue.splice(fromGroup.startIdx, fromGroup.endIdx - fromGroup.startIdx + 1);
+
+      // Recalculate target position after removal
+      let insertAt;
+      if (draggedGroupIdx < targetIdx) {
+        // Dragged from above: insert at target's end position minus removed count
+        insertAt = toGroup.endIdx - movedSlides.length + 1;
+      } else {
+        // Dragged from below: insert at target's start position
+        insertAt = toGroup.startIdx;
+      }
+
+      slideQueue.splice(insertAt, 0, ...movedSlides);
+      draggedGroupIdx = null;
+      renderQueue();
+    });
+  });
+}
+
+// ============================================================
+// EXPORT TO PPTX
+// ============================================================
+function exportPresentation() {
+  if (slideQueue.length === 0) {
+    showToast('Add some slides first!');
+    return;
+  }
+
+  const pres = new PptxGenJS();
+  pres.layout = 'LAYOUT_16x9';
+  pres.author = 'Young Life Club';
+  pres.title = 'Young Life Club Night';
+
+  const theme = { ...currentTheme };
+
+  // Define slide masters
+  pres.defineSlideMaster({
+    title: 'LYRIC_MASTER',
+    background: theme.bgImage ? { path: theme.bgImage } : { color: theme.bg },
+    objects: []
+  });
+
+  pres.defineSlideMaster({
+    title: 'TITLE_MASTER',
+    background: theme.bgImage ? { path: theme.bgImage } : { color: theme.bg },
+    objects: [
+      {
+        rect: {
+          x: 0, y: 0, w: 10, h: 5.625,
+          fill: { color: theme.accent, transparency: 85 }
+        }
+      }
+    ]
+  });
+
+  for (const slide of slideQueue) {
+    switch (slide.type) {
+      case 'song-title':
+        createSongTitleSlide(pres, slide, theme);
+        break;
+      case 'song-lyrics':
+        createLyricSlide(pres, slide, theme);
+        break;
+      case 'title':
+        createWelcomeSlide(pres, slide, theme);
+        break;
+      case 'announcement':
+        createAnnouncementSlide(pres, slide, theme);
+        break;
+      case 'scripture':
+        createScriptureSlide(pres, slide, theme);
+        break;
+      case 'video':
+        createVideoSlide(pres, slide, theme);
+        break;
+      case 'mixer':
+        createMixerSlide(pres, slide, theme);
+        break;
+      case 'names':
+        createNameSlide(pres, slide, theme);
+        break;
+    }
+  }
+
+  pres.writeFile({ fileName: 'YoungLife-ClubNight.pptx' })
+    .then(() => showToast('PowerPoint downloaded!'))
+    .catch(err => {
+      console.error(err);
+      showToast('Error creating file');
+    });
+}
+
+function exportToGoogleSlides() {
+  if (slideQueue.length === 0) {
+    showToast('Add some slides first!');
+    return;
+  }
+
+  // Build the PPTX first, then download and open Google Slides
+  const pres = new PptxGenJS();
+  pres.layout = 'LAYOUT_16x9';
+  pres.author = 'Young Life Club';
+  pres.title = 'Young Life Club Night';
+
+  const theme = { ...currentTheme };
+
+  pres.defineSlideMaster({
+    title: 'LYRIC_MASTER',
+    background: theme.bgImage ? { path: theme.bgImage } : { color: theme.bg },
+    objects: []
+  });
+  pres.defineSlideMaster({
+    title: 'TITLE_MASTER',
+    background: theme.bgImage ? { path: theme.bgImage } : { color: theme.bg },
+    objects: [{ rect: { x: 0, y: 0, w: 10, h: 5.625, fill: { color: theme.accent, transparency: 85 } } }]
+  });
+
+  for (const slide of slideQueue) {
+    switch (slide.type) {
+      case 'song-title': createSongTitleSlide(pres, slide, theme); break;
+      case 'song-lyrics': createLyricSlide(pres, slide, theme); break;
+      case 'title': createWelcomeSlide(pres, slide, theme); break;
+      case 'announcement': createAnnouncementSlide(pres, slide, theme); break;
+      case 'scripture': createScriptureSlide(pres, slide, theme); break;
+      case 'video': createVideoSlide(pres, slide, theme); break;
+      case 'mixer': createMixerSlide(pres, slide, theme); break;
+      case 'names': createNameSlide(pres, slide, theme); break;
+    }
+  }
+
+  pres.writeFile({ fileName: 'YoungLife-ClubNight.pptx' })
+    .then(() => {
+      showToast('File downloaded! Import it in Google Slides now.');
+      window.open('https://slides.google.com/create', '_blank');
+    })
+    .catch(err => {
+      console.error(err);
+      showToast('Error creating file');
+    });
+}
+
+function createSongTitleSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
+
+  // Song title - large centered, always Calibri Bold
+  slide.addText(data.title.toUpperCase(), {
+    x: 0.5, y: 1.5, w: 9, h: 2,
+    fontSize: 48,
+    fontFace: 'Calibri',
+    color: theme.text,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    charSpacing: 3
+  });
+
+  // Decorative line
+  slide.addShape(pres.shapes.RECTANGLE, {
+    x: 3.5, y: 3.6, w: 3, h: 0.04,
+    fill: { color: theme.accent }
+  });
+}
+
+function calcLyricFontSize(lines) {
+  // Auto-size font based on longest line length and number of lines
+  // Slide text area is 9" wide. Calibri Bold at 1pt ~ 0.07" per char.
+  // We want text to fit within 9" width comfortably.
+  const longestLine = Math.max(...lines.map(l => l.length));
+  const numLines = lines.length;
+
+  // Start large and scale down based on longest line
+  // At 9" width with ~0.07" per char at 1pt:
+  //   Max chars at 36pt ≈ 9 / (0.07 * 36) * 36 ≈ ~36 chars
+  //   Max chars at 28pt ≈ ~46 chars
+  //   Max chars at 24pt ≈ ~54 chars
+  //   Max chars at 20pt ≈ ~64 chars
+  let fontSize;
+  if (longestLine <= 25)       fontSize = 40;
+  else if (longestLine <= 30)  fontSize = 36;
+  else if (longestLine <= 38)  fontSize = 32;
+  else if (longestLine <= 45)  fontSize = 28;
+  else if (longestLine <= 55)  fontSize = 24;
+  else if (longestLine <= 65)  fontSize = 22;
+  else                         fontSize = 20;
+
+  // Also scale down if we have more lines (shouldn't with 4-line cap, but just in case)
+  if (numLines > 4 && fontSize > 24) fontSize = 24;
+
+  return fontSize;
+}
+
+function createLyricSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'LYRIC_MASTER' });
+
+  // Auto-calculate font size based on content
+  const fontSize = calcLyricFontSize(data.lines);
+
+  // Adjust line spacing based on font size so 4 lines fill the space nicely
+  let lineSpacing;
+  if (fontSize >= 36)      lineSpacing = 1.5;
+  else if (fontSize >= 30) lineSpacing = 1.6;
+  else if (fontSize >= 24) lineSpacing = 1.8;
+  else                     lineSpacing = 2.0;
+
+  // Always Calibri Bold, auto-sized to fit
+  const textArr = data.lines.map((line, i) => ({
+    text: line,
+    options: {
+      fontSize: fontSize,
+      fontFace: 'Calibri',
+      color: theme.text,
+      bold: true,
+      align: 'center',
+      breakLine: i < data.lines.length - 1
+    }
+  }));
+
+  slide.addText(textArr, {
+    x: 0.5, y: 0, w: 9, h: 5.625,
+    valign: 'middle',
+    align: 'center',
+    lineSpacingMultiple: lineSpacing
+  });
+}
+
+function createWelcomeSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
+
+  let yPos = 1.2;
+
+  // Main title
+  slide.addText(data.title.toUpperCase(), {
+    x: 0.5, y: yPos, w: 9, h: 1.6,
+    fontSize: 52,
+    fontFace: 'Calibri',
+    color: theme.text,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    charSpacing: 2
+  });
+
+  // Decorative line
+  slide.addShape(pres.shapes.RECTANGLE, {
+    x: 3, y: yPos + 1.7, w: 4, h: 0.04,
+    fill: { color: theme.accent }
+  });
+
+  // Subtitle
+  if (data.subtitle) {
+    slide.addText(data.subtitle, {
+      x: 0.5, y: yPos + 2.0, w: 9, h: 0.8,
+      fontSize: 22,
+      fontFace: 'Calibri',
+      color: theme.text,
+      align: 'center',
+      valign: 'middle',
+      transparency: 20
+    });
+  }
+
+  // Extra text
+  if (data.extra) {
+    slide.addText(data.extra, {
+      x: 0.5, y: yPos + 2.8, w: 9, h: 0.7,
+      fontSize: 16,
+      fontFace: 'Calibri',
+      color: theme.text,
+      align: 'center',
+      valign: 'middle',
+      transparency: 40,
+      italic: true
+    });
+  }
+}
+
+function createAnnouncementSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'LYRIC_MASTER' });
+
+  // Heading
+  slide.addText(data.title.toUpperCase(), {
+    x: 0.5, y: 0.4, w: 9, h: 0.8,
+    fontSize: 36,
+    fontFace: 'Calibri',
+    color: theme.accent,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    charSpacing: 2
+  });
+
+  // Decorative line
+  slide.addShape(pres.shapes.RECTANGLE, {
+    x: 3.5, y: 1.3, w: 3, h: 0.03,
+    fill: { color: theme.accent, transparency: 50 }
+  });
+
+  // Content
+  const lines = data.text.split('\n').filter(l => l.trim());
+  const textArr = lines.map((line, i) => ({
+    text: line,
+    options: {
+      fontSize: 22,
+      fontFace: 'Calibri',
+      color: theme.text,
+      align: 'center',
+      breakLine: i < lines.length - 1,
+      lineSpacingMultiple: 1.5
+    }
+  }));
+
+  slide.addText(textArr, {
+    x: 0.8, y: 1.5, w: 8.4, h: 3.5,
+    valign: 'middle',
+    align: 'center'
+  });
+}
+
+function createScriptureSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
+
+  // Large opening quote mark
+  slide.addText('\u201C', {
+    x: 0.5, y: 0.3, w: 1, h: 1,
+    fontSize: 80,
+    fontFace: 'Calibri',
+    color: theme.accent,
+    align: 'left',
+    valign: 'top',
+    transparency: 30
+  });
+
+  // Scripture text
+  slide.addText(data.text, {
+    x: 1, y: 1, w: 8, h: 3,
+    fontSize: 26,
+    fontFace: 'Calibri',
+    bold: true,
+    color: theme.text,
+    align: 'center',
+    valign: 'middle',
+    italic: true,
+    lineSpacingMultiple: 1.4
+  });
+
+  // Reference
+  if (data.reference) {
+    slide.addShape(pres.shapes.RECTANGLE, {
+      x: 4, y: 4.1, w: 2, h: 0.03,
+      fill: { color: theme.accent }
+    });
+
+    slide.addText(data.reference, {
+      x: 1, y: 4.3, w: 8, h: 0.6,
+      fontSize: 20,
+      fontFace: 'Calibri',
+      color: theme.accent,
+      align: 'center',
+      valign: 'middle',
+      bold: true
+    });
+  }
+}
+
+function createVideoSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
+
+  // Title at top
+  slide.addText(data.title.toUpperCase(), {
+    x: 0.5, y: 0.2, w: 9, h: 0.7,
+    fontSize: 28,
+    fontFace: 'Calibri',
+    color: theme.accent,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    charSpacing: 2
+  });
+
+  // Embed YouTube video using PptxGenJS addMedia (plays inline in PowerPoint)
+  if (data.videoId) {
+    const embedUrl = `https://www.youtube.com/embed/${data.videoId}`;
+    try {
+      slide.addMedia({
+        type: 'online',
+        link: embedUrl,
+        x: 0.8, y: 1.0, w: 8.4, h: 4.7
+      });
+    } catch(e) {
+      // Fallback if addMedia fails — show clickable thumbnail
+      slide.addImage({
+        path: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
+        x: 1.5, y: 1.2, w: 7, h: 3.94,
+        hyperlink: { url: data.url }
+      });
+      slide.addText('\u25B6', {
+        x: 4.0, y: 2.5, w: 2, h: 2,
+        fontSize: 60,
+        color: 'FFFFFF',
+        align: 'center',
+        valign: 'middle',
+        shadow: { type: 'outer', blur: 10, opacity: 0.6, color: '000000' },
+        hyperlink: { url: data.url }
+      });
+    }
+  } else {
+    // No video ID — show link
+    slide.addText([
+      { text: '\u25B6  ', options: { fontSize: 28, color: theme.accent, bold: true } },
+      { text: 'Click to play video', options: { fontSize: 22, color: theme.text, underline: true } }
+    ], {
+      x: 2, y: 2.5, w: 6, h: 1.5,
+      align: 'center',
+      valign: 'middle',
+      hyperlink: { url: data.url }
+    });
+  }
+
+  // Description below video
+  if (data.description) {
+    slide.addText(data.description, {
+      x: 1, y: 5.0, w: 8, h: 0.4,
+      fontSize: 12,
+      fontFace: 'Calibri',
+      color: theme.text,
+      align: 'center',
+      italic: true,
+      transparency: 30
+    });
+  }
+
+}
+
+// ============================================================
+// MIXER & NAME SLIDES
+// ============================================================
+function createMixerSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
+
+  slide.addText('MIXER', {
+    x: 0.5, y: 0.5, w: 9, h: 0.6,
+    fontSize: 16,
+    fontFace: 'Calibri',
+    color: theme.accent,
+    bold: true,
+    align: 'center',
+    charSpacing: 6
+  });
+
+  slide.addText(data.title.toUpperCase(), {
+    x: 0.5, y: 1.2, w: 9, h: 2,
+    fontSize: 48,
+    fontFace: 'Calibri',
+    color: theme.text,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    charSpacing: 3
+  });
+
+  slide.addShape(pres.shapes.RECTANGLE, {
+    x: 3.5, y: 3.3, w: 3, h: 0.04,
+    fill: { color: theme.accent }
+  });
+
+  if (data.instructions) {
+    slide.addText(data.instructions, {
+      x: 1, y: 3.6, w: 8, h: 1.5,
+      fontSize: 20,
+      fontFace: 'Calibri',
+      color: theme.text,
+      bold: true,
+      align: 'center',
+      valign: 'top',
+      transparency: 20
+    });
+  }
+}
+
+function createNameSlide(pres, data, theme) {
+  const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
+
+  // Title
+  slide.addText(data.title.toUpperCase(), {
+    x: 0.5, y: 0.2, w: 9, h: 0.8,
+    fontSize: 32,
+    fontFace: 'Calibri',
+    color: theme.accent,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    charSpacing: 3
+  });
+
+  slide.addShape(pres.shapes.RECTANGLE, {
+    x: 3.5, y: 1.05, w: 3, h: 0.04,
+    fill: { color: theme.accent, transparency: 50 }
+  });
+
+  // 6 numbered name slots in 2 columns
+  const startY = 1.3;
+  const rowH = 0.75;
+  const cols = [
+    { numX: 0.8, textX: 1.5, textW: 3.5 },   // Left column
+    { numX: 5.3, textX: 6.0, textW: 3.5 }     // Right column
+  ];
+
+  for (let i = 0; i < 6; i++) {
+    const col = cols[i < 3 ? 0 : 1];
+    const row = i < 3 ? i : i - 3;
+    const name = (data.names[i] && data.names[i].trim()) || '_______________';
+    const y = startY + (row * rowH);
+
+    // Number circle
+    slide.addShape(pres.shapes.OVAL, {
+      x: col.numX, y: y + 0.05, w: 0.5, h: 0.5,
+      fill: { color: theme.accent }
+    });
+    slide.addText(String(i + 1), {
+      x: col.numX, y: y + 0.05, w: 0.5, h: 0.5,
+      fontSize: 18,
+      fontFace: 'Calibri',
+      color: theme.bg,
+      bold: true,
+      align: 'center',
+      valign: 'middle'
+    });
+
+    // Name text
+    slide.addText(name, {
+      x: col.textX, y: y, w: col.textW, h: 0.6,
+      fontSize: 24,
+      fontFace: 'Calibri',
+      color: theme.text,
+      bold: true,
+      align: 'left',
+      valign: 'middle'
+    });
+  }
+}
+
+// ============================================================
+// SONG LIBRARY (localStorage)
+// ============================================================
+function getSongLibrary() {
+  try {
+    return JSON.parse(localStorage.getItem('yl-song-library') || '[]');
+  } catch(e) { return []; }
+}
+
+function saveSongLibrary(library) {
+  localStorage.setItem('yl-song-library', JSON.stringify(library));
+}
+
+function getUsageStats() {
+  try {
+    return JSON.parse(localStorage.getItem('yl-song-usage') || '{}');
+  } catch(e) { return {}; }
+}
+
+function saveUsageStats(stats) {
+  localStorage.setItem('yl-song-usage', JSON.stringify(stats));
+}
+
+function trackSongUsage(title) {
+  const stats = getUsageStats();
+  const monthKey = new Date().toISOString().slice(0, 7); // "2026-03"
+  if (!stats[monthKey]) stats[monthKey] = {};
+  if (!stats[monthKey][title]) stats[monthKey][title] = 0;
+  stats[monthKey][title]++;
+  saveUsageStats(stats);
+  renderTopSongs();
+}
+
+function saveToLibrary() {
+  const title = document.getElementById('songSearch').value.trim();
+  const artist = document.getElementById('songArtist').value.trim();
+  const lyrics = document.getElementById('searchLyrics').value.trim();
+
+  if (!title || !lyrics) {
+    showToast('Enter a song title and lyrics first');
+    return;
+  }
+
+  const library = getSongLibrary();
+
+  const category = selectedCategory;
+
+  // Check if already exists
+  const existing = library.findIndex(s => s.title.toLowerCase() === title.toLowerCase());
+  if (existing >= 0) {
+    library[existing].lyrics = lyrics;
+    library[existing].artist = artist || library[existing].artist;
+    library[existing].category = category;
+    library[existing].updatedAt = new Date().toISOString();
+    showToast(`Updated "${title}" in library`);
+  } else {
+    library.push({
+      id: Date.now().toString(),
+      title: title,
+      artist: artist,
+      lyrics: lyrics,
+      category: category,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    });
+    showToast(`Saved "${title}" to library`);
+  }
+
+  saveSongLibrary(library);
+  renderLibrary();
+  renderLibraryPicks();
+  renderTopSongs();
+}
+
+function loadFromLibrary(id) {
+  const library = getSongLibrary();
+  const song = library.find(s => s.id === id);
+  if (!song) return;
+
+  // Switch to song panel and fill in fields
+  showPanel('song');
+  document.getElementById('songSearch').value = song.title;
+  document.getElementById('songArtist').value = song.artist || '';
+  formatAndSetLyrics(song.lyrics);
+  showToast(`Loaded "${song.title}"`);
+}
+
+function setLibraryCategory(id, category) {
+  const library = getSongLibrary();
+  const song = library.find(s => s.id === id);
+  if (!song) return;
+  song.category = category;
+  saveSongLibrary(library);
+  renderLibrary();
+  showToast(`Set "${song.title}" as ${category}`);
+}
+
+function cycleLibraryCategory(id) {
+  const order = ['fast', 'medium', 'content'];
+  const library = getSongLibrary();
+  const song = library.find(s => s.id === id);
+  if (!song) return;
+  const currentIdx = order.indexOf(song.category);
+  const next = order[(currentIdx + 1) % order.length];
+  song.category = next;
+  saveSongLibrary(library);
+  renderLibrary();
+  showToast(`Set "${song.title}" as ${next}`);
+}
+
+function deleteFromLibrary(id) {
+  const library = getSongLibrary();
+  const song = library.find(s => s.id === id);
+  if (!song) return;
+
+  if (!confirm(`Remove "${song.title}" from your library?`)) return;
+
+  const updated = library.filter(s => s.id !== id);
+  saveSongLibrary(updated);
+  renderLibrary();
+  renderLibraryPicks();
+  showToast(`Removed "${song.title}"`);
+}
+
+// ============================================================
+// ADD LIBRARY SONG DIRECTLY TO QUEUE
+// ============================================================
+function addLibrarySongToQueue(id) {
+  const library = getSongLibrary();
+  const song = library.find(s => s.id === id);
+  if (!song) return;
+
+  addSongSlides(song.title, song.lyrics, 4, song.category || selectedCategory);
+  showToast(`Added "${song.title}" to Club Night`);
+}
+
+// ============================================================
+// DRAG & DROP FROM LIBRARY TO QUEUE
+// ============================================================
+function dragLibrarySong(event, songId) {
+  event.dataTransfer.setData('text/plain', songId);
+  event.dataTransfer.effectAllowed = 'copy';
+  // Highlight drop zone
+  document.getElementById('slideQueue').classList.add('drag-over');
+}
+
+function setupQueueDropZone() {
+  const queue = document.getElementById('slideQueue');
+  const header = document.querySelector('.sidebar-section h3');
+
+  queue.addEventListener('dragover', function(e) {
+    if (draggedGroupIdx !== null) return; // Skip for queue reorder
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    queue.classList.add('drag-over');
+  });
+
+  queue.addEventListener('dragleave', function(e) {
+    queue.classList.remove('drag-over');
+  });
+
+  queue.addEventListener('drop', function(e) {
+    if (draggedGroupIdx !== null) return; // Skip for queue reorder
+    e.preventDefault();
+    e.stopPropagation();
+    queue.classList.remove('drag-over');
+    const songId = e.dataTransfer.getData('text/plain');
+    if (songId && songId !== 'queue-reorder') {
+      addLibrarySongToQueue(songId);
+    }
+  });
+
+  // Also allow dropping on the header area
+  const headerWrapper = document.querySelector('.sidebar-queue-wrapper');
+  if (headerWrapper) {
+    headerWrapper.addEventListener('dragover', function(e) {
+      if (draggedGroupIdx !== null) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      queue.classList.add('drag-over');
+    });
+    headerWrapper.addEventListener('drop', function(e) {
+      if (draggedGroupIdx !== null) return;
+      e.preventDefault();
+      queue.classList.remove('drag-over');
+      const songId = e.dataTransfer.getData('text/plain');
+      if (songId && songId !== 'queue-reorder') {
+        addLibrarySongToQueue(songId);
+      }
+    });
+  }
+}
+
+// Initialize drop zone when page loads
+document.addEventListener('DOMContentLoaded', setupQueueDropZone);
+
+let libraryCatFilter = 'all';
+
+function filterLibrary(cat) {
+  libraryCatFilter = cat;
+  // Update active button
+  document.querySelectorAll('#libCatFilter .cat-filter-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  renderLibrary();
+}
+
+function renderLibrary() {
+  const library = getSongLibrary();
+  const textFilter = (document.getElementById('librarySearchInput')?.value || '').toLowerCase();
+  const listEl = document.getElementById('libraryList');
+  const emptyEl = document.getElementById('libraryEmpty');
+
+  let filtered = library;
+
+  // Filter by category
+  if (libraryCatFilter !== 'all') {
+    filtered = filtered.filter(s => s.category === libraryCatFilter);
+  }
+
+  // Filter by text search
+  if (textFilter) {
+    filtered = filtered.filter(s => s.title.toLowerCase().includes(textFilter) || (s.artist || '').toLowerCase().includes(textFilter));
+  }
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = '';
+    emptyEl.style.display = library.length === 0 ? 'block' : 'none';
+    if (library.length > 0 && filtered.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center; padding:1rem; color:var(--text-muted); font-size:0.85rem;">No songs match your filter</div>';
+    }
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+
+  const catBadges = {
+    fast: '<span class="cat-badge cat-fast">Fast</span>',
+    medium: '<span class="cat-badge cat-medium">Medium</span>',
+    content: '<span class="cat-badge cat-content">Content</span>'
+  };
+
+  listEl.innerHTML = filtered.map(song => {
+    const badge = catBadges[song.category] || '<span class="cat-badge" style="background:rgba(255,255,255,0.1); color:var(--text-muted);">No Type</span>';
+    return `
+      <div class="library-card" draggable="true" ondragstart="dragLibrarySong(event, '${song.id}')">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+          <div class="lib-info">
+            <div class="lib-title">${song.title}</div>
+            <div class="lib-artist">${song.artist || 'Unknown artist'}</div>
+          </div>
+          <div class="lib-actions">
+            <button onclick="addLibrarySongToQueue('${song.id}')" title="Add to Club Night" style="background:var(--accent); color:white;">+ Add</button>
+            <button onclick="loadFromLibrary('${song.id}')">Edit</button>
+            <button class="lib-delete" onclick="deleteFromLibrary('${song.id}')">Remove</button>
+          </div>
+        </div>
+        <div style="margin-top:0.4rem; padding-top:0.4rem; border-top:1px solid var(--border); display:flex; align-items:center; gap:0.4rem;">
+          ${song.category ? `<span class="cat-badge cat-${song.category}" style="padding:3px 10px; cursor:pointer;" onclick="event.stopPropagation(); cycleLibraryCategory('${song.id}')">${song.category.charAt(0).toUpperCase() + song.category.slice(1)}</span>` : `<span style="color:var(--text-muted); font-size:0.7rem; cursor:pointer;" onclick="event.stopPropagation(); cycleLibraryCategory('${song.id}')">Set category</span>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderTopSongs() {
+  const stats = getUsageStats();
+  const monthKey = new Date().toISOString().slice(0, 7);
+  const monthStats = stats[monthKey] || {};
+  const section = document.getElementById('topSongsSection');
+  const list = document.getElementById('topSongsList');
+
+  const sorted = Object.entries(monthStats)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  if (sorted.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+  const library = getSongLibrary();
+
+  list.innerHTML = sorted.map(([title, count], i) => {
+    const libSong = library.find(s => s.title === title);
+    const medal = i === 0 ? '&#129351;' : i === 1 ? '&#129352;' : i === 2 ? '&#129353;' : '';
+    if (libSong) {
+      return `<div class="song-chip" onclick="loadFromLibrary('${libSong.id}')">${medal} ${title} <span class="chip-count">${count}x</span></div>`;
+    } else {
+      return `<div class="song-chip" style="cursor:default;">${medal} ${title} <span class="chip-count">${count}x</span></div>`;
+    }
+  }).join('');
+}
+
+function renderLibraryPicks() {
+  const library = getSongLibrary();
+  const section = document.getElementById('libraryPickSection');
+  const list = document.getElementById('libraryPickList');
+
+  if (library.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+
+  section.style.display = 'block';
+
+  // Show up to 8 most recently used/added
+  const sorted = [...library].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 8);
+
+  list.innerHTML = sorted.map(song =>
+    `<div class="song-chip" onclick="loadFromLibrary('${song.id}')">${song.title}</div>`
+  ).join('');
+}
+
+function exportLibrary() {
+  const library = getSongLibrary();
+  if (library.length === 0) {
+    showToast('Library is empty');
+    return;
+  }
+  const blob = new Blob([JSON.stringify(library, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'young-life-song-library.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Library exported!');
+}
+
+function importLibrary(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (!Array.isArray(imported)) throw new Error('Invalid format');
+
+      const library = getSongLibrary();
+      let added = 0;
+
+      for (const song of imported) {
+        if (!song.title || !song.lyrics) continue;
+        const exists = library.find(s => s.title.toLowerCase() === song.title.toLowerCase());
+        if (!exists) {
+          library.push({
+            id: song.id || Date.now().toString() + Math.random().toString(36).slice(2),
+            title: song.title,
+            artist: song.artist || '',
+            lyrics: song.lyrics,
+            createdAt: song.createdAt || new Date().toISOString(),
+            updatedAt: song.updatedAt || new Date().toISOString()
+          });
+          added++;
+        }
+      }
+
+      saveSongLibrary(library);
+      renderLibrary();
+      renderLibraryPicks();
+      showToast(`Imported ${added} new song${added !== 1 ? 's' : ''}!`);
+    } catch(err) {
+      showToast('Invalid library file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// Queue Resize Handle
+// ============================================================
+(function() {
+  const handle = document.getElementById('queueResizeHandle');
+  const wrapper = document.getElementById('sidebarQueueWrapper');
+  const sidebar = document.querySelector('.sidebar');
+  let isResizing = false;
+  let startY = 0;
+  let startHeight = 0;
+
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    isResizing = true;
+    startY = e.clientY;
+    startHeight = wrapper.offsetHeight;
+    handle.classList.add('resizing');
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', function(e) {
+    if (!isResizing) return;
+    const diff = startY - e.clientY;
+    const newHeight = Math.max(180, Math.min(startHeight + diff, sidebar.offsetHeight - 100));
+    wrapper.style.height = newHeight + 'px';
+    wrapper.style.flex = 'none';
+  });
+
+  document.addEventListener('mouseup', function() {
+    if (!isResizing) return;
+    isResizing = false;
+    handle.classList.remove('resizing');
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+// Initialize
+init();
+</script>
+</body>
+</html>
