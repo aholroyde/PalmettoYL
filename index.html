@@ -58,19 +58,19 @@
   /* ============ HEADER ============ */
   .header {
     background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 55%, var(--navy-light) 100%);
-    padding: 1.1rem 2rem;
+    padding: 0.9rem 2rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
     box-shadow: 0 4px 20px rgba(0, 59, 91, 0.35);
   }
-  .brand { display: flex; align-items: center; gap: 1.1rem; }
-  .brand-logo { height: 52px; width: auto; display: block; }
-  .brand-divider { width: 1px; height: 40px; background: rgba(255,255,255,0.25); }
+  .brand { display: flex; align-items: center; gap: 1.4rem; }
+  .brand-logo { height: 78px; width: auto; display: block; }
+  .brand-divider { width: 1px; height: 58px; background: rgba(255,255,255,0.25); }
   .brand h1 {
     font-family: 'Barlow Semi Condensed', sans-serif;
-    font-size: 1.6rem;
+    font-size: 2rem;
     font-weight: 700;
     color: white;
     letter-spacing: 0.5px;
@@ -92,7 +92,7 @@
   /* ============ LAYOUT ============ */
   .app-container {
     display: flex;
-    height: calc(100vh - 72px);
+    height: calc(100vh - 104px);
     overflow: hidden;
   }
 
@@ -525,32 +525,66 @@
   }
   .filter-chip.active { background: var(--navy); border-color: var(--navy); color: white; }
 
-  .activity-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 0.9rem;
-  }
-  .activity-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 1.05rem 1.1rem;
+  .activity-list {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
-    transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+    gap: 0.5rem;
+    max-width: 880px;
   }
-  .activity-card:hover {
+  .activity-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .activity-item:hover { border-color: var(--navy-light); }
+  .activity-item.open {
     border-color: var(--green);
-    box-shadow: 0 6px 18px rgba(0,59,91,0.09);
-    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,59,91,0.08);
   }
-  .activity-card h4 {
+  .activity-head {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+  }
+  .activity-chevron {
+    flex-shrink: 0;
+    color: var(--muted);
+    transition: transform 0.2s;
+  }
+  .activity-item.open .activity-chevron { transform: rotate(90deg); color: var(--green-dark); }
+  .activity-name {
     font-family: 'Barlow Semi Condensed', sans-serif;
-    font-size: 1.02rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--navy);
+    flex: 1;
+    min-width: 0;
   }
+  .activity-head-meta {
+    display: flex;
+    gap: 0.3rem;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .activity-body {
+    display: none;
+    padding: 0 1rem 1rem 2.5rem;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .activity-item.open .activity-body { display: flex; }
+
   .activity-meta { display: flex; flex-wrap: wrap; gap: 0.35rem; }
   .meta-badge {
     display: inline-flex;
@@ -701,7 +735,10 @@
 
   /* ============ RESPONSIVE ============ */
   @media (max-width: 900px) {
-    .header { padding: 0.9rem 1rem; }
+    .header { padding: 0.8rem 1rem; }
+    .brand-logo { height: 56px; }
+    .brand-divider { height: 42px; }
+    .brand h1 { font-size: 1.5rem; }
     .header-right { display: none; }
     .app-container { flex-direction: column; height: auto; overflow: visible; }
     .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); }
@@ -713,7 +750,9 @@
     .queue-resize-handle { display: none; }
     .sidebar-queue-wrapper { height: auto; max-height: 260px; }
     .main-area { padding: 1.1rem 1rem 4rem; overflow: visible; }
-    .activity-grid { grid-template-columns: 1fr; }
+    .activity-body { padding-left: 1rem; }
+    .activity-head { flex-wrap: wrap; }
+    .activity-head-meta { width: 100%; justify-content: flex-start; padding-left: 1.7rem; }
   }
 </style>
 </head>
@@ -816,18 +855,18 @@
     <!-- GAMES -->
     <div class="panel panel-wide" id="panel-games" style="display:none;">
       <h2>Upfront Games</h2>
-      <p class="panel-sub">A few kids up front, everybody watching. Filter by group size and supplies, then add a game slide to your club night with one tap.</p>
+      <p class="panel-sub">A few kids up front, everybody watching. Tap a game to see supplies and how to run it. Adding one puts a name slide on screen with numbered slots for the kids coming up.</p>
       <div class="activity-filters" id="filters-games"></div>
-      <div class="activity-grid" id="grid-games"></div>
+      <div class="activity-list" id="grid-games"></div>
       <div class="empty-state" id="empty-games" style="display:none;">No games match those filters. Try clearing them.</div>
     </div>
 
     <!-- MIXERS -->
     <div class="panel panel-wide" id="panel-mixer" style="display:none;">
       <h2>Mixers</h2>
-      <p class="panel-sub">Everybody plays. Great for getting kids out of their friend groups early in club. Add a mixer slide to your club night with one tap.</p>
+      <p class="panel-sub">Everybody plays. Great for getting kids out of their friend groups early in club. Tap a mixer to see how it runs. Adding one puts a slide on screen that just says MIXER, since you explain the rest out loud.</p>
       <div class="activity-filters" id="filters-mixers"></div>
-      <div class="activity-grid" id="grid-mixers"></div>
+      <div class="activity-list" id="grid-mixers"></div>
       <div class="empty-state" id="empty-mixers" style="display:none;">No mixers match those filters. Try clearing them.</div>
     </div>
 
@@ -1551,6 +1590,8 @@ const activityFilters = {
   mixers: { q: '', size: 'any', prep: 'any' }
 };
 
+const activityOpen = { games: new Set(), mixers: new Set() };
+
 function renderActivityFilters(kind) {
   const el = document.getElementById('filters-' + kind);
   const f = activityFilters[kind];
@@ -1603,35 +1644,60 @@ function renderActivities(kind) {
 
   const prepLabels = { none: 'No prep', low: 'Easy prep', medium: 'Some prep' };
 
+  const open = activityOpen[kind];
+
   grid.innerHTML = filtered.map(a => `
-    <div class="activity-card">
-      <h4>${a.name}</h4>
-      <div class="activity-meta">
-        <span class="meta-badge people"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${a.people}</span>
-        <span class="meta-badge ${a.prep === 'none' ? 'noprep' : ''}">${prepLabels[a.prep]}</span>
-        ${a.messy ? '<span class="meta-badge messy">Messy</span>' : ''}
-      </div>
-      <div class="activity-supplies">
-        <strong>Supplies:</strong> ${a.supplies.length ? a.supplies.join(', ') : 'None!'}
-      </div>
-      <div class="activity-desc">${a.desc}</div>
-      <div class="activity-actions">
-        <button class="btn btn-primary" onclick="addActivityToQueue('${kind}', '${a.id}')">+ Add Slide</button>
+    <div class="activity-item ${open.has(a.id) ? 'open' : ''}">
+      <button class="activity-head" onclick="toggleActivity('${kind}', '${a.id}')">
+        <svg class="activity-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        <span class="activity-name">${a.name}</span>
+        <span class="activity-head-meta">
+          <span class="meta-badge people"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${a.people}</span>
+          <span class="meta-badge ${a.prep === 'none' ? 'noprep' : ''}">${prepLabels[a.prep]}</span>
+          ${a.messy ? '<span class="meta-badge messy">Messy</span>' : ''}
+        </span>
+      </button>
+      <div class="activity-body">
+        <div class="activity-supplies">
+          <strong>Supplies:</strong> ${a.supplies.length ? a.supplies.join(', ') : 'None!'}
+        </div>
+        <div class="activity-desc">${a.desc}</div>
+        <div class="activity-actions">
+          <button class="btn btn-primary" onclick="addActivityToQueue('${kind}', '${a.id}')">+ Add Slide</button>
+        </div>
       </div>
     </div>
   `).join('');
 }
 
+function toggleActivity(kind, id) {
+  const open = activityOpen[kind];
+  if (open.has(id)) open.delete(id); else open.add(id);
+  renderActivities(kind);
+}
+
 function addActivityToQueue(kind, id) {
   const a = getActivityData(kind).find(x => x.id === id);
   if (!a) return;
-  slideQueue.push({
-    type: kind === 'games' ? 'game' : 'mixer',
-    title: a.name,
-    instructions: a.slideText
-  });
+
+  if (kind === 'games') {
+    // Game slides are name slides: numbered slots for the kids coming up front
+    slideQueue.push({
+      type: 'game',
+      title: a.name,
+      names: ['', '', '', '', '', '']
+    });
+    showToast(`Added "${a.name}" name slide`);
+  } else {
+    // Mixer slides just say MIXER. Leaders explain the rest out loud.
+    slideQueue.push({
+      type: 'mixer',
+      title: a.name
+    });
+    showToast(`Added "${a.name}" mixer slide`);
+  }
+
   renderQueue();
-  showToast(`Added "${a.name}" to your club night`);
 }
 
 // ============================================================
@@ -2238,8 +2304,8 @@ function buildPresentation() {
       case 'announcement': createAnnouncementSlide(pres, slide, theme); break;
       case 'scripture':    createScriptureSlide(pres, slide, theme); break;
       case 'video':        createVideoSlide(pres, slide, theme); break;
-      case 'mixer':        createActivitySlide(pres, slide, theme, 'MIXER'); break;
-      case 'game':         createActivitySlide(pres, slide, theme, 'GAME'); break;
+      case 'mixer':        createMixerSlide(pres, slide, theme); break;
+      case 'game':         createNameSlide(pres, slide, theme); break;
       case 'names':        createNameSlide(pres, slide, theme); break;
     }
   }
@@ -2546,48 +2612,25 @@ function createVideoSlide(pres, data, theme) {
   }
 }
 
-// Shared slide layout for games and mixers
-function createActivitySlide(pres, data, theme, kicker) {
+// Mixer slides say one word. Leaders explain the mixer out loud.
+function createMixerSlide(pres, data, theme) {
   const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
 
-  slide.addText(kicker, {
-    x: 0.5, y: 0.5, w: 9, h: 0.6,
-    fontSize: 16,
-    fontFace: 'Calibri',
-    color: theme.accent,
-    bold: true,
-    align: 'center',
-    charSpacing: 6
-  });
-
-  slide.addText(data.title.toUpperCase(), {
-    x: 0.5, y: 1.2, w: 9, h: 2,
-    fontSize: 48,
+  slide.addText('MIXER', {
+    x: 0.5, y: 0, w: 9, h: 5.625,
+    fontSize: 80,
     fontFace: 'Calibri',
     color: theme.text,
     bold: true,
     align: 'center',
     valign: 'middle',
-    charSpacing: 3
+    charSpacing: 8
   });
 
   slide.addShape(pres.shapes.RECTANGLE, {
-    x: 3.5, y: 3.3, w: 3, h: 0.04,
+    x: 3.5, y: 3.55, w: 3, h: 0.05,
     fill: { color: theme.accent }
   });
-
-  if (data.instructions) {
-    slide.addText(data.instructions, {
-      x: 1, y: 3.6, w: 8, h: 1.5,
-      fontSize: 20,
-      fontFace: 'Calibri',
-      color: theme.text,
-      bold: true,
-      align: 'center',
-      valign: 'top',
-      transparency: 20
-    });
-  }
 }
 
 function createNameSlide(pres, data, theme) {
@@ -2619,7 +2662,8 @@ function createNameSlide(pres, data, theme) {
   for (let i = 0; i < 6; i++) {
     const col = cols[i < 3 ? 0 : 1];
     const row = i < 3 ? i : i - 3;
-    const name = (data.names[i] && data.names[i].trim()) || '_______________';
+    const names = data.names || [];
+    const name = (names[i] && names[i].trim()) || '_______________';
     const y = startY + (row * rowH);
 
     slide.addShape(pres.shapes.OVAL, {
