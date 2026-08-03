@@ -252,7 +252,17 @@
     color: #fff;
     font-weight: 700;
   }
-  .queue-section { flex: 1; overflow-y: auto; padding: 0.5rem 0.6rem; }
+  .queue-section { flex: 1; overflow-y: auto; padding: 0.2rem 0.6rem 0.5rem; }
+  .queue-hint {
+    display: none;
+    padding: 0.4rem 0.6rem 0.15rem;
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .queue-hint.show { display: block; }
   .queue-empty-drop {
     flex: 1;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -300,6 +310,22 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .q-type { font-size: 0.65rem; color: var(--muted); }
+  .q-move { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+  .q-arrow {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--navy);
+    width: 20px;
+    height: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+  }
+  .q-arrow:hover:not(:disabled) { background: var(--green); border-color: var(--green); color: #fff; }
+  .q-arrow:disabled { opacity: 0.3; cursor: default; }
   .q-remove {
     background: none; border: none;
     color: var(--muted);
@@ -775,6 +801,99 @@
   .resource-ext { color: var(--muted); flex-shrink: 0; margin-top: 0.2rem; }
   .resource-card:hover .resource-ext { color: var(--green-dark); }
 
+  /* ============ QUICK ADD ============ */
+  .flow-actions { display: flex; gap: 0.45rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+  .quick-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 26, 41, 0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 940;
+  }
+  .quick-overlay.show { display: flex; }
+  .quick-modal {
+    background: var(--card);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 26, 41, 0.4);
+  }
+  .quick-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .quick-head h3 {
+    font-family: 'Barlow Semi Condensed', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .quick-close {
+    background: none;
+    border: none;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0 0.3rem;
+    border-radius: 6px;
+  }
+  .quick-close:hover { color: var(--orange); background: rgba(249,94,10,0.1); }
+
+  .quick-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 1.4rem;
+    padding: 1.3rem 1.4rem;
+  }
+  .quick-form { display: flex; flex-direction: column; gap: 0.9rem; }
+  .quick-preview { display: flex; flex-direction: column; gap: 0.45rem; }
+  .quick-preview-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+  }
+  .quick-preview-note { font-size: 0.72rem; color: var(--muted); }
+  .quick-preview .preview-slide { box-shadow: 0 4px 14px rgba(0,26,41,0.22); }
+
+  .quick-names { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+  .quick-name-row { display: flex; align-items: center; gap: 0.45rem; }
+  .quick-name-row span {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--navy);
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .quick-actions {
+    display: flex;
+    gap: 0.6rem;
+    padding: 0 1.4rem 1.4rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 780px) {
+    .quick-grid { grid-template-columns: 1fr; }
+  }
+
   /* ============ SLIDE PREVIEW ============ */
   .preview-overlay {
     position: fixed;
@@ -1014,6 +1133,7 @@
 
     <div class="sidebar-queue-wrapper" id="sidebarQueueWrapper">
       <div class="queue-header"><h3>Your Club Night</h3></div>
+      <div class="queue-hint" id="queueHint">Drag or use the arrows to rearrange</div>
       <span id="slideCount" style="display:none;">0</span>
       <div class="queue-section" id="slideQueue"></div>
     </div>
@@ -1299,6 +1419,27 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="quick-overlay" id="quickOverlay" onclick="if(event.target === this) closeQuickAdd()">
+  <div class="quick-modal">
+    <div class="quick-head">
+      <h3 id="quickHeading"></h3>
+      <button class="quick-close" onclick="closeQuickAdd()" title="Close">&times;</button>
+    </div>
+    <div class="quick-grid">
+      <div class="quick-form" id="quickForm"></div>
+      <div class="quick-preview">
+        <div class="quick-preview-label">Live preview</div>
+        <div class="preview-slide" id="quickPreviewSlide"></div>
+        <div class="quick-preview-note">Uses your current slide theme.</div>
+      </div>
+    </div>
+    <div class="quick-actions">
+      <button class="btn btn-primary" onclick="quickAddToQueue()">+ Add to Club Night</button>
+      <button class="btn btn-secondary" onclick="closeQuickAdd()">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -2054,9 +2195,33 @@ function renderMinistryFlow() {
         <div class="flow-title">${step.title}</div>
         <div class="flow-desc">${step.desc}</div>
       </div>
-      ${step.panel ? `<button class="btn btn-navy" onclick="showPanel('${step.panel}')">${step.btn}</button>` : ''}
+      <div class="flow-actions">${flowButtons(step)}</div>
     </div>
   `).join('');
+}
+
+// Steps that build a slide right here open a quick-add window instead of
+// navigating away. Steps that need a list still jump to that page.
+const QUICK_STEPS = {
+  title:     { label: 'Add Slide' },
+  announce:  { label: 'Add Slide' },
+  scripture: { label: 'Add Verse' }
+};
+
+function flowButtons(step) {
+  if (!step.panel) return '';
+
+  const quick = QUICK_STEPS[step.panel];
+  if (quick) {
+    return `<button class="btn btn-navy" onclick="openQuickAdd('${step.panel}')">${quick.label}</button>`;
+  }
+
+  if (step.panel === 'games') {
+    return `<button class="btn btn-navy" onclick="navTo('games')">${step.btn}</button>` +
+           `<button class="btn btn-secondary" onclick="openQuickAdd('names')">Add Name Slide</button>`;
+  }
+
+  return `<button class="btn btn-navy" onclick="navTo('${step.panel}')">${step.btn}</button>`;
 }
 
 function selectMinistry(key) {
@@ -2711,6 +2876,10 @@ function renderQueue() {
   const headerCount = document.getElementById('headerCount');
   if (headerCount) headerCount.textContent = slideQueue.length;
 
+  // Only hint at dragging once there is more than one thing to drag
+  const hint = document.getElementById('queueHint');
+  if (hint) hint.classList.toggle('show', getQueueGroups().length > 1);
+
   if (slideQueue.length === 0) {
     container.innerHTML = `
       <div class="queue-empty-drop">
@@ -2750,6 +2919,10 @@ function renderQueue() {
           <div class="q-title">${group.title}</div>
           <div class="q-type">${typeNames[group.type] || group.type} ${catBadge}</div>
         </div>
+        <span class="q-move" draggable="false" onmousedown="event.stopPropagation();">
+          <button class="q-arrow" draggable="false" ${gi === 0 ? 'disabled' : ''} onclick="event.preventDefault(); event.stopPropagation(); moveGroup(${gi}, -1);" title="Move up"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"/></svg></button>
+          <button class="q-arrow" draggable="false" ${gi === groups.length - 1 ? 'disabled' : ''} onclick="event.preventDefault(); event.stopPropagation(); moveGroup(${gi}, 1);" title="Move down"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></button>
+        </span>
         <button class="q-remove" draggable="false" onmousedown="event.stopPropagation();" onclick="event.preventDefault(); event.stopPropagation(); removeGroup(${gi});" title="Remove">&times;</button>
       </div>
     `;
@@ -2764,6 +2937,25 @@ function removeGroup(groupIdx) {
   if (groupIdx < 0 || groupIdx >= groups.length) return;
   const group = groups[groupIdx];
   slideQueue.splice(group.startIdx, group.endIdx - group.startIdx + 1);
+  renderQueue();
+}
+
+// Nudge a whole group one slot up or down. A song is several slides but moves
+// as one block, so positions are recalculated after the group is pulled out.
+function moveGroup(groupIdx, direction) {
+  const groups = getQueueGroups();
+  const targetIdx = groupIdx + direction;
+  if (targetIdx < 0 || targetIdx >= groups.length) return;
+
+  const group = groups[groupIdx];
+  const neighbor = groups[targetIdx];
+  const moved = slideQueue.splice(group.startIdx, group.endIdx - group.startIdx + 1);
+
+  const insertAt = direction === -1
+    ? neighbor.startIdx
+    : neighbor.endIdx - moved.length + 1;
+
+  slideQueue.splice(insertAt, 0, ...moved);
   renderQueue();
 }
 
@@ -2899,6 +3091,161 @@ function exportToGoogleSlides() {
       console.error(err);
       showToast('Error creating file');
     });
+}
+
+// ============================================================
+// QUICK ADD
+// Build a slide from the Plan page without navigating away.
+// ============================================================
+const QUICK_TYPES = {
+  title: {
+    heading: 'Welcome / Title Slide',
+    fields: `
+      <div class="form-group">
+        <label>Main title</label>
+        <input type="text" id="qTitleMain" placeholder="e.g. Young Life Club Night">
+      </div>
+      <div class="form-group">
+        <label>Subtitle (optional)</label>
+        <input type="text" id="qTitleSub" placeholder="e.g. Beaufort Club, Spring Kickoff">
+      </div>
+      <div class="form-group">
+        <label>Extra line (optional)</label>
+        <input type="text" id="qTitleExtra" placeholder="e.g. Welcome! Grab some food and find a seat.">
+      </div>`,
+    read: () => ({
+      type: 'title',
+      title: qv('qTitleMain'),
+      subtitle: qv('qTitleSub'),
+      extra: qv('qTitleExtra')
+    }),
+    placeholder: s => ({ ...s, title: s.title || 'Young Life Club Night' }),
+    validate: s => s.title ? null : 'Please enter a main title'
+  },
+
+  announce: {
+    heading: 'Announcements',
+    fields: `
+      <div class="form-group">
+        <label>Heading</label>
+        <input type="text" id="qAnnHeading" placeholder="e.g. Upcoming Events">
+      </div>
+      <div class="form-group">
+        <label>Announcements (one per line)</label>
+        <textarea id="qAnnText" rows="7" placeholder="e.g. Summer Camp: June 15-20&#10;Sign up by April 1st!&#10;Cost: $350 (scholarships available)"></textarea>
+      </div>`,
+    read: () => ({
+      type: 'announcement',
+      title: qv('qAnnHeading') || 'Announcement',
+      text: qv('qAnnText')
+    }),
+    placeholder: s => ({ ...s, text: s.text || 'Your announcements show up here' }),
+    validate: s => s.text.trim() ? null : 'Please enter at least one announcement'
+  },
+
+  scripture: {
+    heading: 'Club Talk Verse',
+    fields: `
+      <div class="form-group">
+        <label>Verse or quote</label>
+        <textarea id="qScrText" rows="5" placeholder='e.g. "For I know the plans I have for you," declares the Lord...'></textarea>
+      </div>
+      <div class="form-group">
+        <label>Reference</label>
+        <input type="text" id="qScrRef" placeholder="e.g. Jeremiah 29:11">
+      </div>`,
+    read: () => ({
+      type: 'scripture',
+      title: qv('qScrRef') || 'Scripture',
+      text: qv('qScrText'),
+      reference: qv('qScrRef')
+    }),
+    placeholder: s => ({ ...s, text: s.text || 'Your verse shows up here' }),
+    validate: s => s.text.trim() ? null : 'Please enter a verse or quote'
+  },
+
+  names: {
+    heading: 'Name Slide',
+    fields: `
+      <div class="form-group">
+        <label>Slide title</label>
+        <input type="text" id="qNamesTitle" value="Names">
+      </div>
+      <div class="form-group">
+        <label>Names (leave blank for empty lines to fill in live)</label>
+        <div class="quick-names">
+          ${[1,2,3,4,5,6].map(n => `
+            <div class="quick-name-row">
+              <span>${n}</span>
+              <input type="text" id="qName${n}" placeholder="Name ${n}">
+            </div>`).join('')}
+        </div>
+      </div>`,
+    read: () => ({
+      type: 'names',
+      title: qv('qNamesTitle') || 'Names',
+      names: [1,2,3,4,5,6].map(n => qv('qName' + n))
+    }),
+    placeholder: s => s,
+    validate: () => null
+  }
+};
+
+let quickType = null;
+
+function qv(id) {
+  const el = document.getElementById(id);
+  return el ? el.value.trim() : '';
+}
+
+function openQuickAdd(type) {
+  const cfg = QUICK_TYPES[type];
+  if (!cfg) return;
+  quickType = type;
+
+  document.getElementById('quickHeading').textContent = cfg.heading;
+  document.getElementById('quickForm').innerHTML = cfg.fields;
+  document.getElementById('quickOverlay').classList.add('show');
+
+  document.querySelectorAll('#quickForm input, #quickForm textarea')
+    .forEach(el => el.addEventListener('input', renderQuickPreview));
+
+  renderQuickPreview();
+
+  const first = document.querySelector('#quickForm input, #quickForm textarea');
+  if (first) first.focus();
+}
+
+function renderQuickPreview() {
+  const cfg = QUICK_TYPES[quickType];
+  if (!cfg) return;
+  const slide = cfg.placeholder(cfg.read());
+  const box = document.getElementById('quickPreviewSlide');
+  box.innerHTML = previewSlideHTML(slide, { ...currentTheme });
+  const canvas = box.querySelector('.preview-canvas');
+  if (canvas) canvas.style.transform = `scale(${box.clientWidth / 960})`;
+}
+
+function quickAddToQueue() {
+  const cfg = QUICK_TYPES[quickType];
+  if (!cfg) return;
+
+  const slide = cfg.read();
+  const problem = cfg.validate(slide);
+  if (problem) {
+    showToast(problem);
+    return;
+  }
+
+  slideQueue.push(slide);
+  renderQueue();
+  closeQuickAdd();
+  showToast(`Added "${slide.title}" to your club night`);
+}
+
+function closeQuickAdd() {
+  document.getElementById('quickOverlay').classList.remove('show');
+  quickType = null;
 }
 
 // ============================================================
@@ -3080,6 +3427,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closePreview();
     closeGoogleSlidesModal();
+    closeQuickAdd();
     closeMenus();
   }
 });
