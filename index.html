@@ -65,7 +65,18 @@
     gap: 1rem;
     box-shadow: 0 4px 20px rgba(0, 59, 91, 0.35);
   }
-  .brand { display: flex; align-items: center; gap: 1.4rem; }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 1.4rem;
+    cursor: pointer;
+    border-radius: 10px;
+    padding: 0.2rem 0.4rem;
+    margin-left: -0.4rem;
+    transition: background 0.15s;
+  }
+  .brand:hover { background: rgba(255,255,255,0.08); }
+  .brand:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
   .brand-logo { height: 78px; width: auto; display: block; }
   .brand-divider { width: 1px; height: 58px; background: rgba(255,255,255,0.25); }
   .brand h1 {
@@ -798,6 +809,8 @@
     color: var(--green-dark);
     margin-top: 0.2rem;
   }
+  .resource-card.featured { border-color: var(--green); background: var(--green-glow); }
+  .resource-card.featured .resource-icon { background: var(--green-dark); }
   .resource-ext { color: var(--muted); flex-shrink: 0; margin-top: 0.2rem; }
   .resource-card:hover .resource-ext { color: var(--green-dark); }
 
@@ -820,6 +833,37 @@
   }
   .help-q { font-weight: 700; font-size: 0.92rem; color: var(--navy); margin-bottom: 0.25rem; }
   .help-a { font-size: 0.86rem; line-height: 1.6; color: var(--text); }
+
+  /* ============ PRINTABLE CLUB OUTLINE ============ */
+  #printSheet { display: none; }
+
+  @media print {
+    @page { size: letter portrait; margin: 0.5in; }
+
+    .header, .topnav, .app-container, .toast,
+    .preview-overlay, .quick-overlay, .modal-overlay { display: none !important; }
+
+    body { background: #fff; }
+
+    #printSheet {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 0.35in;
+      width: 7.5in;
+      height: 10in;
+    }
+    .outline-card {
+      border: 1.5px solid #000;
+      padding: 0.28in 0.3in;
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 12pt;
+      line-height: 1.85;
+      color: #000;
+      overflow: hidden;
+    }
+    .outline-card .oc-gap { height: 0.16in; }
+  }
 
   /* ============ QUICK ADD ============ */
   .flow-actions { display: flex; gap: 0.45rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
@@ -1091,7 +1135,7 @@
 <body>
 
 <div class="header">
-  <div class="brand">
+  <div class="brand" onclick="navTo('plan')" role="button" tabindex="0" title="Back to Plan Your Club" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('plan');}">
     <img class="brand-logo" src="data:image/png;base64,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" alt="Young Life Palmetto Region">
     <div class="brand-divider"></div>
     <h1>Club Slide Maker</h1>
@@ -1141,7 +1185,7 @@
   </div>
 
   <button class="nav-btn" id="nav-help" onclick="navTo('help')">
-    <span class="nav-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> Help
+    <span class="nav-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span> Suggestions
   </button>
 </nav>
 
@@ -1165,7 +1209,7 @@
     <div class="sidebar-export">
       <button class="btn btn-export outline" onclick="openPreview()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Preview Slides</button>
       <button class="btn btn-export" onclick="exportPresentation()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download PowerPoint</button>
-      <button class="btn btn-export google" onclick="exportToGoogleSlides()">Send to Google Slides</button>
+      <button class="btn btn-export google" onclick="printClubOutline()"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print Club Outline</button>
     </div>
   </div>
 
@@ -1191,6 +1235,16 @@
       <p class="panel-sub">Things worth putting in a kid&rsquo;s hands, and things worth putting in yours.</p>
 
       <div class="resource-list">
+        <a class="resource-card featured" href="https://ylworkdayhandbook.my.canva.site/staff-associate-application-website" target="_blank" rel="noopener">
+          <span class="resource-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg></span>
+          <span class="resource-body">
+            <span class="resource-title">Interested in joining Young Life staff?</span>
+            <span class="resource-desc">Everything you need to know about becoming a Staff Associate: what the role is, what training looks like, and how to apply. Send this to the leader you keep thinking should do this.</span>
+            <span class="resource-meta">Staff Associate application</span>
+          </span>
+          <span class="resource-ext"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></span>
+        </a>
+
         <a class="resource-card" href="https://open.spotify.com/show/73mKtrbBVeJ7spHfaPDHwa" target="_blank" rel="noopener">
           <span class="resource-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span>
           <span class="resource-body">
@@ -1225,7 +1279,7 @@
 
     <!-- HELP -->
     <div class="panel" id="panel-help" style="display:none;">
-      <h2>Help &amp; Suggestions</h2>
+      <h2>Suggestions</h2>
       <p class="panel-sub">Built by Young Life staff, for Young Life staff. If something is broken, missing, or could be better, say so and it gets fixed.</p>
 
       <div class="resource-list" style="margin-bottom:1.8rem;">
@@ -1512,6 +1566,8 @@
   </div>
 </div>
 
+<div id="printSheet" aria-hidden="true"></div>
+
 <div class="quick-overlay" id="quickOverlay" onclick="if(event.target === this) closeQuickAdd()">
   <div class="quick-modal">
     <div class="quick-head">
@@ -1542,42 +1598,6 @@
     <button class="preview-close" onclick="closePreview()">Close</button>
   </div>
   <div class="preview-body" id="previewBody"></div>
-</div>
-
-<div class="modal-overlay" id="gsModal" onclick="if(event.target === this) closeGoogleSlidesModal()">
-  <div class="modal">
-    <h3>Your club night is ready</h3>
-    <p class="modal-sub">Google Slides can't open a file straight from a website, so here's the quick way to get it in.</p>
-
-    <div class="modal-file">
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Downloaded: PalmettoYL-ClubNight.pptx
-    </div>
-
-    <div class="modal-steps">
-      <div class="modal-step">
-        <div class="step-num">1</div>
-        <div class="step-text">Click <strong>Open Google Drive</strong> below. It opens in a new tab.</div>
-      </div>
-      <div class="modal-step">
-        <div class="step-num">2</div>
-        <div class="step-text">Drag <strong>PalmettoYL-ClubNight.pptx</strong> out of your Downloads folder and drop it anywhere on the Drive window.</div>
-      </div>
-      <div class="modal-step">
-        <div class="step-num">3</div>
-        <div class="step-text">Double-click the file in Drive. It opens in Google Slides with every slide ready to present.</div>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-navy" onclick="openGoogleDrive()">Open Google Drive</button>
-      <button class="btn btn-secondary" onclick="closeGoogleSlidesModal()">Done</button>
-    </div>
-
-    <div class="modal-note">
-      Already have a Slides deck open? Use <strong>File &rarr; Import slides &rarr; Upload</strong> and pick the same file. Presenting from PowerPoint or ProPresenter instead? The downloaded file works there as-is, no Drive needed.
-    </div>
-  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -3168,20 +3188,69 @@ function exportPresentation() {
     });
 }
 
-function exportToGoogleSlides() {
-  if (slideQueue.length === 0) {
-    showToast('Add some slides first!');
-    return;
+// ============================================================
+// PRINTABLE CLUB OUTLINE
+// Four run sheets on one 8.5 x 11 page, cut apart for the band,
+// the emcee, and whoever is running the game.
+// ============================================================
+
+// What a sheet looks like before anything is built
+const BLANK_OUTLINE = [
+  'Welcome',
+  'Song 1-',
+  'Song 2-',
+  '',
+  'Mixer-',
+  'Game-',
+  '',
+  'Song 3-',
+  'Song 4-',
+  '',
+  'Announcements-',
+  '',
+  'Club Talk-'
+];
+
+function buildOutlineLines() {
+  const groups = getQueueGroups();
+  if (groups.length === 0) return BLANK_OUTLINE;
+
+  const lines = [];
+  let songNum = 0;
+  let lastType = null;
+
+  for (const g of groups) {
+    // Blank line between sections, same as the paper version
+    if (lastType && lastType !== g.type) lines.push('');
+
+    switch (g.type) {
+      case 'title':        lines.push('Welcome' + (g.title ? ' - ' + g.title : '')); break;
+      case 'song':         lines.push('Song ' + (++songNum) + '- ' + g.title); break;
+      case 'mixer':        lines.push('Mixer- ' + g.title); break;
+      case 'game':         lines.push('Game- ' + g.title); break;
+      case 'announcement': lines.push('Announcements-'); break;
+      case 'scripture':    lines.push('Club Talk- ' + (g.title === 'Scripture' ? '' : g.title)); break;
+      case 'video':        lines.push('Video- ' + g.title); break;
+      case 'names':        lines.push('Names-'); break;
+      default:             lines.push(g.title);
+    }
+    lastType = g.type;
   }
 
-  buildPresentation().writeFile({ fileName: 'PalmettoYL-ClubNight.pptx' })
-    .then(() => {
-      document.getElementById('gsModal').classList.add('show');
-    })
-    .catch(err => {
-      console.error(err);
-      showToast('Error creating file');
-    });
+  return lines;
+}
+
+function printClubOutline() {
+  const lines = buildOutlineLines();
+
+  const card = '<div class="outline-card">' + lines.map(l =>
+    l === '' ? '<div class="oc-gap"></div>' : `<div class="oc-line">${esc(l)}</div>`
+  ).join('') + '</div>';
+
+  // Four to a page so one print run covers the whole team
+  document.getElementById('printSheet').innerHTML = card + card + card + card;
+
+  window.print();
 }
 
 // ============================================================
@@ -3517,19 +3586,10 @@ window.addEventListener('resize', () => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     closePreview();
-    closeGoogleSlidesModal();
     closeQuickAdd();
     closeMenus();
   }
 });
-
-function closeGoogleSlidesModal() {
-  document.getElementById('gsModal').classList.remove('show');
-}
-
-function openGoogleDrive() {
-  window.open('https://drive.google.com/drive/my-drive', '_blank');
-}
 
 function createSongTitleSlide(pres, data, theme) {
   const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
