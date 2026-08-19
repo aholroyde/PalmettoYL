@@ -2273,7 +2273,7 @@ const MINISTRIES = {
       { title: 'Welcome slide', desc: "Tonight's theme on the screen while everybody finds a seat and settles in.", btn: 'Make it', panel: 'title' },
       { title: 'Celebrate the moms and shout outs', desc: 'Birthdays, graduations, new jobs, first steps, new babies. Say names out loud and make a big deal out of it.', btn: 'Add slide', panel: 'announce' },
       { title: 'Mixer', desc: 'Get everybody up and talking to somebody they did not come with.', btn: 'Pick a mixer', panel: 'mixer' },
-      { title: 'A song or two', desc: 'Music they know. Just Dance is a great resource for getting everyone moving.', btn: 'Add songs', panel: 'song' },
+      { title: 'A song or two', desc: 'Music they know. Just Dance videos are a great resource for getting everyone moving, so drop the YouTube link straight onto a slide.', btn: 'Add songs', panel: 'song', extra: { label: 'Add YouTube Video', quick: 'video' } },
       { title: 'Game', desc: 'Keep it low-key and never anything that would embarrass a parent in front of the group.', btn: 'Pick a game', panel: 'games' },
       { title: 'Second mixer', desc: 'One more round of everybody playing before the room settles down for announcements.', btn: 'Pick a mixer', panel: 'mixer' },
       { title: 'Announcements and resources', desc: 'Next club, camp, and practical help: rides, diapers, job leads, GED info.', btn: 'Add slide', panel: 'announce' },
@@ -2333,7 +2333,14 @@ function flowButtons(step) {
            `<button class="btn btn-secondary" onclick="openQuickAdd('names')">Add Name Slide</button>`;
   }
 
-  return `<button class="btn btn-navy" onclick="navTo('${step.panel}')">${step.btn}</button>`;
+  const main = `<button class="btn btn-navy" onclick="navTo('${step.panel}')">${step.btn}</button>`;
+
+  // Some steps offer a second way to build the slide
+  const extra = step.extra
+    ? `<button class="btn btn-secondary" onclick="${step.extra.quick ? `openQuickAdd('${step.extra.quick}')` : `navTo('${step.extra.panel}')`}">${step.extra.label}</button>`
+    : '';
+
+  return main + extra;
 }
 
 function selectMinistry(key) {
@@ -3324,6 +3331,40 @@ const QUICK_TYPES = {
     }),
     placeholder: s => ({ ...s, text: s.text || 'Your verse shows up here' }),
     validate: s => s.text.trim() ? null : 'Please enter a verse or quote'
+  },
+
+  video: {
+    heading: 'YouTube Video Slide',
+    fields: `
+      <div class="form-group">
+        <label>Title</label>
+        <input type="text" id="qVidTitle" placeholder="e.g. Just Dance warm up">
+      </div>
+      <div class="form-group">
+        <label>YouTube link</label>
+        <input type="text" id="qVidUrl" placeholder="e.g. https://www.youtube.com/watch?v=...">
+      </div>
+      <div class="form-group">
+        <label>Note (optional)</label>
+        <input type="text" id="qVidNote" placeholder="e.g. Everybody up, follow along">
+      </div>`,
+    read: () => {
+      const url = qv('qVidUrl');
+      const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+      return {
+        type: 'video',
+        title: qv('qVidTitle') || 'Video',
+        url: url,
+        description: qv('qVidNote'),
+        videoId: m ? m[1] : ''
+      };
+    },
+    placeholder: s => s,
+    validate: s => {
+      if (!s.url) return 'Paste a YouTube link first';
+      if (!s.videoId) return 'That does not look like a YouTube link';
+      return null;
+    }
   },
 
   names: {
