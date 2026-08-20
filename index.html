@@ -1371,12 +1371,12 @@
       <button class="btn btn-orange" style="margin-bottom:1.3rem;" onclick="navTo('library')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Song Library</button>
 
       <div id="topSongsSection" style="display:none; margin-bottom:1rem;">
-        <label style="display:block; font-size:0.78rem; font-weight:600; color:var(--navy); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.6px;">Top songs this month</label>
+        <label style="display:block; font-size:0.78rem; font-weight:600; color:var(--navy); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.6px;">Top songs this month &mdash; tap to add</label>
         <div id="topSongsList"></div>
       </div>
 
       <div id="libraryPickSection" style="display:none; margin-bottom:1.2rem;">
-        <label style="display:block; font-size:0.78rem; font-weight:600; color:var(--navy); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.6px;">From your library</label>
+        <label style="display:block; font-size:0.78rem; font-weight:600; color:var(--navy); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.6px;">From your library &mdash; tap to add</label>
         <div id="libraryPickList"></div>
       </div>
 
@@ -4308,7 +4308,7 @@ function renderTopSongs() {
     const libSong = library.find(s => s.title === title);
     const medal = '<span style="font-weight:800; color:var(--green-dark);">' + (i + 1) + '.</span>';
     if (libSong) {
-      return `<div class="song-chip" onclick="loadFromLibrary('${libSong.id}')">${medal} ${title} <span class="chip-count">${count}x</span></div>`;
+      return `<div class="song-chip" title="Add to your club night" onclick="addLibrarySongToQueue('${libSong.id}')">${medal} ${title} <span class="chip-count">${count}x</span></div>`;
     } else {
       return `<div class="song-chip" style="cursor:default;">${medal} ${title} <span class="chip-count">${count}x</span></div>`;
     }
@@ -4331,7 +4331,7 @@ function renderLibraryPicks() {
   const sorted = [...library].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 8);
 
   list.innerHTML = sorted.map(song =>
-    `<div class="song-chip" onclick="loadFromLibrary('${song.id}')">${song.title}</div>`
+    `<div class="song-chip" title="Add to your club night" onclick="addLibrarySongToQueue('${song.id}')">${song.title}</div>`
   ).join('');
 }
 
