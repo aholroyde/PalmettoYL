@@ -415,6 +415,8 @@
   }
   .btn-primary { background: var(--green); color: white; }
   .btn-primary:hover { background: var(--green-dark); }
+  .btn-orange { background: var(--orange); color: white; }
+  .btn-orange:hover { background: #D44E06; }
   .btn-navy { background: var(--navy); color: white; }
   .btn-navy:hover { background: var(--navy-light); }
   .btn-secondary { background: var(--card); color: var(--navy); border: 1px solid var(--border); }
@@ -1365,6 +1367,8 @@
     <div class="panel" id="panel-song" style="display:none;">
       <h2>Add a Song</h2>
       <p class="panel-sub">Search your library or paste lyrics. Lyrics auto-format into slides of 4 bold lines, sized to fit.</p>
+
+      <button class="btn btn-orange" style="margin-bottom:1.3rem;" onclick="navTo('library')"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Song Library</button>
 
       <div id="topSongsSection" style="display:none; margin-bottom:1rem;">
         <label style="display:block; font-size:0.78rem; font-weight:600; color:var(--navy); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.6px;">Top songs this month</label>
