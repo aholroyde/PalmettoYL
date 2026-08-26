@@ -1335,6 +1335,10 @@
           <div class="help-a">On purpose. The screen shows numbered slots for the kids coming up front, not the instructions, so nobody reads the punch line before you run the game. The how-to stays here in the app for you.</div>
         </div>
         <div class="help-item">
+          <div class="help-q">Do YouTube videos play inside the slideshow?</div>
+          <div class="help-a">Yes. Video slides are built as real PowerPoint online videos, so clicking the picture during your slideshow plays it right there. It needs an internet connection, and some school and church guest networks block YouTube, so test it on the room's computer before club. If it will not play, the caption under the video is a link that opens it on YouTube, and importing the deck to Google Slides and re-inserting the link also plays inline.</div>
+        </div>
+        <div class="help-item">
           <div class="help-q">Does my club night save if I close the tab?</div>
           <div class="help-a">No. Your club night is built fresh each time, so download the PowerPoint before you close the page. The song database and your ministry choice do carry over.</div>
         </div>
@@ -1500,7 +1504,7 @@
     <!-- VIDEO -->
     <div class="panel" id="panel-video" style="display:none;">
       <h2>YouTube Video</h2>
-      <p class="panel-sub">Camp promo, music video, or a funny clip. Embeds right into the PowerPoint.</p>
+      <p class="panel-sub">Camp promo, music video, or a Just Dance clip. The slide plays inside the PowerPoint slideshow when you click it, so you do not have to leave the deck. Needs internet at club.</p>
       <div class="form-group">
         <label>Title</label>
         <input type="text" id="videoTitle" placeholder="e.g. Summer Camp 2026 Promo">
@@ -3209,7 +3213,11 @@ async function prefetchVideoThumbs() {
   }));
 }
 
+// Filled in as video slides are created, then consumed by patchOnlineVideos()
+let videoMarkers = [];
+
 function buildPresentation() {
+  videoMarkers = [];
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';
   pres.author = 'Palmetto Young Life';
@@ -3256,12 +3264,124 @@ async function exportPresentation() {
 
   await prefetchVideoThumbs();
 
-  buildPresentation().writeFile({ fileName: 'PalmettoYL-ClubNight.pptx' })
-    .then(() => showToast('PowerPoint downloaded!'))
-    .catch(err => {
-      console.error(err);
-      showToast('Error creating file');
-    });
+  try {
+    const blob = await buildPresentation().write({ outputType: 'blob' });
+    const finished = await patchOnlineVideos(blob, videoMarkers);
+    downloadBlob(finished, 'PalmettoYL-ClubNight.pptx');
+    showToast('PowerPoint downloaded!');
+  } catch (err) {
+    console.error(err);
+    showToast('Error creating file');
+  }
+}
+
+// ============================================================
+// NATIVE ONLINE VIDEO
+// PptxGenJS cannot write PowerPoint's modern online-video markup, so the deck is
+// unzipped after generation and the poster picture is converted into a real
+// video: an external video relationship, an a:videoFile link, and the p14 web
+// video extension carrying the YouTube embed. That is what lets it play inside
+// the slideshow instead of opening a browser.
+// ============================================================
+const P14_NS = 'http://schemas.microsoft.com/office/powerpoint/2010/main';
+const MC_NS = 'http://schemas.openxmlformats.org/markup-compatibility/2006';
+const VIDEO_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/video';
+const MEDIA_EXT_URI = '{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}';
+
+function xmlAttr(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+async function patchOnlineVideos(blob, videos) {
+  if (!videos.length) return blob;
+
+  const zip = await JSZip.loadAsync(await blob.arrayBuffer());
+  const slideFiles = Object.keys(zip.files).filter(n => /^ppt\/slides\/slide\d+\.xml$/.test(n));
+
+  for (const file of slideFiles) {
+    let xml = await zip.file(file).async('string');
+    let touched = false;
+
+    for (const v of videos) {
+      const marker = 'name="' + v.marker + '"';
+      const at = xml.indexOf(marker);
+      if (at === -1) continue;
+
+      // Register the YouTube URL as an external video relationship
+      const relsPath = file.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+      let rels = await zip.file(relsPath).async('string');
+      const used = Array.from(rels.matchAll(/Id="rId(\d+)"/g)).map(m => parseInt(m[1], 10));
+      const rId = 'rId' + ((used.length ? Math.max.apply(null, used) : 0) + 1);
+      const embedUrl = 'https://www.youtube.com/embed/' + v.videoId;
+
+      rels = rels.replace('</Relationships>',
+        '<Relationship Id="' + rId + '" Type="' + VIDEO_REL +
+        '" Target="' + xmlAttr(embedUrl) + '" TargetMode="External"/></Relationships>');
+      zip.file(relsPath, rels);
+
+      // Rewrite just this picture element
+      const picStart = xml.lastIndexOf('<p:pic>', at);
+      const picEnd = xml.indexOf('</p:pic>', at) + '</p:pic>'.length;
+      let pic = xml.slice(picStart, picEnd);
+
+      const iframe = '<iframe width="640" height="360" src="' + embedUrl +
+        '" frameborder="0" allowfullscreen></iframe>';
+
+      const nvPr =
+        '<p:nvPr>' +
+          '<a:videoFile r:link="' + rId + '"/>' +
+          '<p:extLst>' +
+            '<p:ext uri="' + MEDIA_EXT_URI + '">' +
+              '<p14:media xmlns:p14="' + P14_NS + '" r:link="' + rId + '">' +
+                '<p14:webVideoPr embeddedHtml="' + xmlAttr(iframe) + '" h="360" w="640"/>' +
+              '</p14:media>' +
+            '</p:ext>' +
+          '</p:extLst>' +
+        '</p:nvPr>';
+
+      pic = pic.replace(/<p:nvPr>\s*<\/p:nvPr>/, nvPr);
+
+      // Marks the picture as playable media so PowerPoint shows video controls
+      pic = pic.replace(/(<p:cNvPr[^>]*>)/,
+        '$1<a:hlinkClick r:id="" action="ppaction://media"/>');
+
+      xml = xml.slice(0, picStart) + pic + xml.slice(picEnd);
+      touched = true;
+    }
+
+    if (!touched) continue;
+
+    // p14 has to be declared on the slide root
+    if (xml.indexOf('xmlns:p14') === -1) {
+      xml = xml.replace('<p:sld xmlns:a=',
+        '<p:sld xmlns:p14="' + P14_NS + '" xmlns:mc="' + MC_NS + '" mc:Ignorable="p14" xmlns:a=');
+    }
+
+    // PowerPoint expects a timing tree on slides that contain media
+    if (xml.indexOf('<p:timing') === -1) {
+      xml = xml.replace('</p:sld>',
+        '<p:timing><p:tnLst><p:par><p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"/></p:par></p:tnLst></p:timing></p:sld>');
+    }
+
+    zip.file(file, xml);
+  }
+
+  return zip.generateAsync({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+}
+
+function downloadBlob(blob, fileName) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ============================================================
@@ -3899,9 +4019,10 @@ function createScriptureSlide(pres, data, theme) {
   }
 }
 
-// PowerPoint cannot reliably embed a streaming YouTube player, so the slide is a
-// real thumbnail that opens the video in a browser when clicked. Works the same
-// in PowerPoint, Google Slides, and Keynote.
+// The thumbnail acts as the video poster frame. After the deck is zipped,
+// patchOnlineVideos() turns this picture into a real PowerPoint online video so
+// it plays inside the slideshow. The caption below keeps a plain hyperlink as a
+// fallback for anywhere inline playback does not work.
 function createVideoSlide(pres, data, theme) {
   const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
 
@@ -3916,50 +4037,42 @@ function createVideoSlide(pres, data, theme) {
     charSpacing: 2
   });
 
-  const link = data.url ? { hyperlink: { url: data.url, tooltip: 'Play on YouTube' } } : {};
   const imgX = 1.5, imgY = 1.05, imgW = 7, imgH = 3.94;
+
+  // Marker name so the patcher can find this exact picture in the slide XML
+  const marker = data.videoId ? 'ylvideo-' + (videoMarkers.length) : null;
+  if (marker) {
+    videoMarkers.push({ marker: marker, videoId: data.videoId });
+  }
 
   if (data.thumbData) {
     slide.addImage({
       data: data.thumbData,
       x: imgX, y: imgY, w: imgW, h: imgH,
-      ...link
+      objectName: marker || undefined
     });
   } else {
-    // No thumbnail available, so draw a placeholder panel instead
     slide.addShape(pres.shapes.RECTANGLE, {
       x: imgX, y: imgY, w: imgW, h: imgH,
       fill: { color: '000000' },
-      line: { color: theme.accent, width: 1 },
-      ...link
+      line: { color: theme.accent, width: 1 }
+    });
+    slide.addText('\u25B6', {
+      x: imgX + imgW / 2 - 0.45, y: imgY + imgH / 2 - 0.45, w: 0.9, h: 0.9,
+      fontSize: 32, color: 'FFFFFF', align: 'center', valign: 'middle',
+      hyperlink: data.url ? { url: data.url } : undefined
     });
   }
 
-  // Play button over the middle of the frame
-  slide.addShape(pres.shapes.OVAL, {
-    x: imgX + imgW / 2 - 0.45, y: imgY + imgH / 2 - 0.45, w: 0.9, h: 0.9,
-    fill: { color: '000000', transparency: 35 },
-    line: { color: 'FFFFFF', width: 2 },
-    ...link
-  });
-  slide.addText('\u25B6', {
-    x: imgX + imgW / 2 - 0.4, y: imgY + imgH / 2 - 0.45, w: 0.9, h: 0.9,
-    fontSize: 28,
-    color: 'FFFFFF',
-    align: 'center',
-    valign: 'middle',
-    ...link
-  });
-
-  slide.addText('Click to play on YouTube', {
+  slide.addText('Click the video to play, or click here to open it on YouTube', {
     x: 1, y: imgY + imgH + 0.12, w: 8, h: 0.35,
-    fontSize: 13,
+    fontSize: 12,
     fontFace: 'Calibri',
     color: theme.accent,
     bold: true,
     align: 'center',
     valign: 'middle',
-    ...link
+    hyperlink: data.url ? { url: data.url, tooltip: 'Open on YouTube' } : undefined
   });
 
   if (data.description) {
