@@ -3148,6 +3148,67 @@ function setupQueueDragReorder() {
 // ============================================================
 // EXPORT TO PPTX
 // ============================================================
+// Pull YouTube thumbnails into the slides before building, since PptxGenJS needs
+// the image data up front. The thumbnail is redrawn onto a canvas as a real PNG,
+// cropped to 16:9, which removes YouTube's letterbox bars and guarantees the
+// embedded data matches the file type PowerPoint is told to expect.
+function loadThumbAsPng(videoId, name) {
+  return new Promise((resolve, reject) => {
+    fetch(`https://img.youtube.com/vi/${videoId}/${name}.jpg`)
+      .then(res => {
+        if (!res.ok) throw new Error('status ' + res.status);
+        return res.blob();
+      })
+      .then(blob => {
+        // YouTube serves a tiny grey placeholder when a size does not exist
+        if (blob.size < 2000) throw new Error('placeholder thumbnail');
+
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          try {
+            // 960px is plenty for a projector and keeps the PPTX from ballooning.
+            // PptxGenJS labels every data URL as .png, so the data has to really be PNG.
+            const w = Math.min(img.naturalWidth, 960);
+            const h = Math.round(w * 9 / 16);
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext('2d');
+            // Center-crop the source to 16:9 so YouTube's letterbox bars are gone
+            const srcH = Math.min(img.naturalHeight, Math.round(img.naturalWidth * 9 / 16));
+            const srcY = Math.round((img.naturalHeight - srcH) / 2);
+            ctx.drawImage(img, 0, srcY, img.naturalWidth, srcH, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/png'));
+          } catch (e) {
+            reject(e);
+          } finally {
+            URL.revokeObjectURL(url);
+          }
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('decode failed')); };
+        img.src = url;
+      })
+      .catch(reject);
+  });
+}
+
+async function prefetchVideoThumbs() {
+  const pending = slideQueue.filter(s => s.type === 'video' && s.videoId && !s.thumbData);
+
+  await Promise.all(pending.map(async slide => {
+    for (const name of ['maxresdefault', 'hqdefault']) {
+      try {
+        slide.thumbData = await loadThumbAsPng(slide.videoId, name);
+        return;
+      } catch (e) {
+        // Try the next size, then fall back to a plain panel on the slide
+      }
+    }
+    console.warn('No thumbnail available for ' + slide.videoId);
+  }));
+}
+
 function buildPresentation() {
   const pres = new PptxGenJS();
   pres.layout = 'LAYOUT_16x9';
@@ -3187,11 +3248,13 @@ function buildPresentation() {
   return pres;
 }
 
-function exportPresentation() {
+async function exportPresentation() {
   if (slideQueue.length === 0) {
     showToast('Add some slides first!');
     return;
   }
+
+  await prefetchVideoThumbs();
 
   buildPresentation().writeFile({ fileName: 'PalmettoYL-ClubNight.pptx' })
     .then(() => showToast('PowerPoint downloaded!'))
@@ -3836,11 +3899,14 @@ function createScriptureSlide(pres, data, theme) {
   }
 }
 
+// PowerPoint cannot reliably embed a streaming YouTube player, so the slide is a
+// real thumbnail that opens the video in a browser when clicked. Works the same
+// in PowerPoint, Google Slides, and Keynote.
 function createVideoSlide(pres, data, theme) {
   const slide = pres.addSlide({ masterName: 'TITLE_MASTER' });
 
   slide.addText(data.title.toUpperCase(), {
-    x: 0.5, y: 0.2, w: 9, h: 0.7,
+    x: 0.5, y: 0.25, w: 9, h: 0.6,
     fontSize: 28,
     fontFace: 'Calibri',
     color: theme.accent,
@@ -3850,45 +3916,55 @@ function createVideoSlide(pres, data, theme) {
     charSpacing: 2
   });
 
-  if (data.videoId) {
-    const embedUrl = `https://www.youtube.com/embed/${data.videoId}`;
-    try {
-      slide.addMedia({
-        type: 'online',
-        link: embedUrl,
-        x: 0.8, y: 1.0, w: 8.4, h: 4.7
-      });
-    } catch(e) {
-      slide.addImage({
-        path: `https://img.youtube.com/vi/${data.videoId}/hqdefault.jpg`,
-        x: 1.5, y: 1.2, w: 7, h: 3.94,
-        hyperlink: { url: data.url }
-      });
-      slide.addText('▶', {
-        x: 4.0, y: 2.5, w: 2, h: 2,
-        fontSize: 60,
-        color: 'FFFFFF',
-        align: 'center',
-        valign: 'middle',
-        shadow: { type: 'outer', blur: 10, opacity: 0.6, color: '000000' },
-        hyperlink: { url: data.url }
-      });
-    }
+  const link = data.url ? { hyperlink: { url: data.url, tooltip: 'Play on YouTube' } } : {};
+  const imgX = 1.5, imgY = 1.05, imgW = 7, imgH = 3.94;
+
+  if (data.thumbData) {
+    slide.addImage({
+      data: data.thumbData,
+      x: imgX, y: imgY, w: imgW, h: imgH,
+      ...link
+    });
   } else {
-    slide.addText([
-      { text: '▶  ', options: { fontSize: 28, color: theme.accent, bold: true } },
-      { text: 'Click to play video', options: { fontSize: 22, color: theme.text, underline: true } }
-    ], {
-      x: 2, y: 2.5, w: 6, h: 1.5,
-      align: 'center',
-      valign: 'middle',
-      hyperlink: { url: data.url }
+    // No thumbnail available, so draw a placeholder panel instead
+    slide.addShape(pres.shapes.RECTANGLE, {
+      x: imgX, y: imgY, w: imgW, h: imgH,
+      fill: { color: '000000' },
+      line: { color: theme.accent, width: 1 },
+      ...link
     });
   }
 
+  // Play button over the middle of the frame
+  slide.addShape(pres.shapes.OVAL, {
+    x: imgX + imgW / 2 - 0.45, y: imgY + imgH / 2 - 0.45, w: 0.9, h: 0.9,
+    fill: { color: '000000', transparency: 35 },
+    line: { color: 'FFFFFF', width: 2 },
+    ...link
+  });
+  slide.addText('\u25B6', {
+    x: imgX + imgW / 2 - 0.4, y: imgY + imgH / 2 - 0.45, w: 0.9, h: 0.9,
+    fontSize: 28,
+    color: 'FFFFFF',
+    align: 'center',
+    valign: 'middle',
+    ...link
+  });
+
+  slide.addText('Click to play on YouTube', {
+    x: 1, y: imgY + imgH + 0.12, w: 8, h: 0.35,
+    fontSize: 13,
+    fontFace: 'Calibri',
+    color: theme.accent,
+    bold: true,
+    align: 'center',
+    valign: 'middle',
+    ...link
+  });
+
   if (data.description) {
     slide.addText(data.description, {
-      x: 1, y: 5.0, w: 8, h: 0.4,
+      x: 1, y: imgY + imgH + 0.5, w: 8, h: 0.35,
       fontSize: 12,
       fontFace: 'Calibri',
       color: theme.text,
