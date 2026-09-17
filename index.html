@@ -768,6 +768,42 @@
 
   .divider { border: none; border-top: 1px solid var(--border); margin: 1.4rem 0; }
 
+  .lyric-clean-note {
+    background: rgba(249,94,10,0.1);
+    border: 1px solid rgba(249,94,10,0.4);
+    border-radius: 9px;
+    padding: 0.6rem 0.85rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+  .lyric-clean-note strong { color: var(--orange); }
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--navy);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .link-btn:hover { color: var(--green-dark); }
+  .filter-toggle {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 0.45rem;
+    margin-top: 0.5rem;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    color: var(--muted) !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+    cursor: pointer;
+  }
+  .filter-toggle input { margin-top: 0.15rem; }
+
   /* ============ RESOURCES ============ */
   .resource-list { display: flex; flex-direction: column; gap: 0.8rem; max-width: 780px; }
   .resource-card {
@@ -1327,6 +1363,10 @@
           <div class="help-a">Hit Send to Google Slides. It downloads the file, then walks you through dropping it into Google Drive. Drive converts it and it opens in Slides with everything intact.</div>
         </div>
         <div class="help-item">
+          <div class="help-q">What happens to songs with language in them?</div>
+          <div class="help-a">Curse words are replaced with *** automatically, both when you paste lyrics and again when the song goes onto a slide, so nothing slips onto the screen at club. That covers songs other leaders saved to the shared library too. Mild words like "hell" are left alone by default so worship lyrics are not broken, and there is a checkbox under the lyrics box to clean those as well. The filter only catches words, so still read through a song yourself before you put it up.</div>
+        </div>
+        <div class="help-item">
           <div class="help-q">Why do my lyrics split into odd chunks?</div>
           <div class="help-a">Lyrics are automatically cut into four-line slides, and font size shrinks to fit long lines. Put a blank line between verses and choruses when you paste and it will break exactly where you want.</div>
         </div>
@@ -1336,7 +1376,7 @@
         </div>
         <div class="help-item">
           <div class="help-q">Do YouTube videos play inside the slideshow?</div>
-          <div class="help-a">Yes. Video slides are built as real PowerPoint online videos, so clicking the picture during your slideshow plays it right there. It needs an internet connection, and some school and church guest networks block YouTube, so test it on the room's computer before club. If it will not play, the caption under the video is a link that opens it on YouTube, and importing the deck to Google Slides and re-inserting the link also plays inline.</div>
+          <div class="help-a">In PowerPoint and Keynote, yes. Click the picture during your slideshow and it plays right there. It needs an internet connection, and some school and church guest networks block YouTube, so test it on the room's computer before club. Google Slides is the exception: it cannot play video that came in from a PowerPoint file. The link is saved in that slide's speaker notes, so in Slides use Insert &rarr; Video, paste the link, and it plays inline. The caption under the video is also a plain link that opens YouTube in a browser anywhere else.</div>
         </div>
         <div class="help-item">
           <div class="help-q">Does my club night save if I close the tab?</div>
@@ -1401,7 +1441,12 @@
 
       <div class="form-group">
         <label>Lyrics (paste here, slide breaks are added automatically)</label>
+        <div class="lyric-clean-note" id="lyricCleanNote" style="display:none;"></div>
         <textarea id="searchLyrics" rows="12" placeholder="Paste lyrics here..."></textarea>
+        <label class="filter-toggle">
+          <input type="checkbox" id="strictFilterBox" onchange="toggleStrictFilter(this)">
+          Also clean mild words (hell, sucks). Off by default so worship lyrics stay intact.
+        </label>
       </div>
 
       <div class="form-group">
@@ -1504,7 +1549,7 @@
     <!-- VIDEO -->
     <div class="panel" id="panel-video" style="display:none;">
       <h2>YouTube Video</h2>
-      <p class="panel-sub">Camp promo, music video, or a Just Dance clip. The slide plays inside the PowerPoint slideshow when you click it, so you do not have to leave the deck. Needs internet at club.</p>
+      <p class="panel-sub">Camp promo, music video, or a Just Dance clip. Plays inside the slideshow in PowerPoint and Keynote when you click it. Google Slides cannot play imported video, so the link is saved in the speaker notes for you to paste in. Needs internet at club.</p>
       <div class="form-group">
         <label>Title</label>
         <input type="text" id="videoTitle" placeholder="e.g. Summer Camp 2026 Promo">
@@ -2363,6 +2408,10 @@ function selectMinistry(key) {
 // INIT
 // ============================================================
 function init() {
+  strictLyricFilter = localStorage.getItem('yl-strict-filter') === '1';
+  const strictBox = document.getElementById('strictFilterBox');
+  if (strictBox) strictBox.checked = strictLyricFilter;
+
   const savedMinistry = localStorage.getItem('yl-ministry');
   if (savedMinistry && MINISTRIES[savedMinistry]) currentMinistry = savedMinistry;
   renderMinistryTabs();
@@ -2650,13 +2699,119 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         this.value = before + pastedText + after;
       }
+
+      lastRawLyrics = this.value;
+      const cleaned = cleanLyrics(this.value);
+      this.value = cleaned.text;
+      showCleanNote(cleaned);
+
       this.dispatchEvent(new Event('input'));
     });
   }
 });
 
 function formatAndSetLyrics(lyrics) {
-  document.getElementById('searchLyrics').value = formatLyricsWithBreaks(lyrics);
+  const formatted = formatLyricsWithBreaks(lyrics);
+  lastRawLyrics = formatted;
+  const cleaned = cleanLyrics(formatted);
+  document.getElementById('searchLyrics').value = cleaned.text;
+  showCleanNote(cleaned);
+}
+
+// ============================================================
+// LYRIC FILTER
+// Club songs come from pop radio, so lyrics get scrubbed on the way in and again
+// on the way onto a slide. Patterns allow for stretched spellings ("fuuuck") and
+// pre-masked spellings ("sh*t"), and every pattern is anchored on word
+// boundaries so ordinary words survive: bass, class, passion, assassin, shell,
+// hello, cocktail, title, Dickens.
+// ============================================================
+const PROFANITY = [
+  // Longest forms first so they are not partially matched by a shorter pattern
+  /\bmother\s*-?\s*f+[u\*@#]+c*k+\w*\b/gi,
+  /\bgod\s*-?\s*d+a+m+n+\w*\b/gi,
+  /\bf+[u\*@#]+c*k+\w*\b/gi,
+  /\bs+h+[i\*@#!]+t+\w*\b/gi,
+  /\bb+[i\*@#!]+t+c+h+\w*\b/gi,
+  /\bd+a+m+n+(ed|it|its|ing)?\b/gi,
+  /\bc+u+n+t+s?\b/gi,
+  /\bn+i+g+(g+(a|er)s?|a+s?)\b/gi,
+  /\bf+a+g+(g+o+t+)?s?\b/gi,
+  /\bp+u+s+s+(y|ies)\b/gi,
+  /\bw+h+o+r+e+s?\b/gi,
+  /\bs+l+u+t+s?\b/gi,
+  /\bb+a+s+t+a+r+d+s?\b/gi,
+  /\bd+i+c+k+(head|heads|s)?\b/gi,
+  /\bc+o+c+k+(s|sucker|suckers)?\b/gi,
+  /\bp+r+i+c+k+s?\b/gi,
+  /\bp+i+s+s+(ed|ing|es)?\b/gi,
+  /\ba+s+s+(hole|holes|es)?\b/gi,
+  /\ba+r+s+e+s?\b/gi,
+  /\bc+r+a+p+(py|ping)?\b/gi,
+  /\bw+a+n+k+\w*\b/gi,
+  /\bb+o+l+l+o+c+k+s?\b/gi,
+  /\bt+w+a+t+s?\b/gi
+];
+
+// Words a leader may want cleaned too, but that show up legitimately in worship
+// lyrics ("saved me from hell"), so they are opt-in rather than automatic.
+const PROFANITY_STRICT = [
+  /\bh+e+l+l+\b/gi,
+  /\bs+u+c+k+(s|ed|ing)?\b/gi
+];
+
+let strictLyricFilter = false;
+
+function cleanLyrics(text) {
+  if (!text) return { text: text || '', count: 0, words: [] };
+
+  const found = [];
+  let out = text;
+
+  const patterns = strictLyricFilter ? PROFANITY.concat(PROFANITY_STRICT) : PROFANITY;
+  for (const re of patterns) {
+    out = out.replace(re, match => {
+      found.push(match.toLowerCase().trim());
+      return '***';
+    });
+  }
+
+  return { text: out, count: found.length, words: Array.from(new Set(found)) };
+}
+
+let lastRawLyrics = null;
+
+function showCleanNote(result) {
+  const note = document.getElementById('lyricCleanNote');
+  if (!note) return;
+
+  if (!result.count) {
+    note.style.display = 'none';
+    return;
+  }
+
+  const label = result.count === 1 ? '1 word was' : result.count + ' words were';
+  note.innerHTML = `<strong>${label} cleaned</strong> and replaced with ***. ` +
+    `<button class="link-btn" onclick="undoLyricClean()">Undo and keep the original</button>`;
+  note.style.display = 'block';
+}
+
+function undoLyricClean() {
+  if (lastRawLyrics === null) return;
+  document.getElementById('searchLyrics').value = lastRawLyrics;
+  document.getElementById('lyricCleanNote').style.display = 'none';
+  showToast('Original lyrics restored. They will be cleaned again when you add or save.');
+}
+
+function toggleStrictFilter(el) {
+  strictLyricFilter = el.checked;
+  localStorage.setItem('yl-strict-filter', strictLyricFilter ? '1' : '0');
+  const box = document.getElementById('searchLyrics');
+  if (box && box.value.trim()) {
+    const res = cleanLyrics(box.value);
+    box.value = res.text;
+    showCleanNote(res);
+  }
 }
 
 // ============================================================
@@ -2780,7 +2935,10 @@ function addSongFromSearch() {
 }
 
 function addSongSlides(title, lyrics, maxLines, overrideCategory) {
-  const sections = parseLyrics(lyrics, maxLines);
+  // Catches songs added straight from the library or the top-songs chips,
+  // including anything saved before the filter existed
+  const scrubbed = cleanLyrics(lyrics);
+  const sections = parseLyrics(scrubbed.text, maxLines);
 
   if (sections.length === 0) {
     showToast('No lyrics to add');
@@ -4086,6 +4244,16 @@ function createVideoSlide(pres, data, theme) {
       transparency: 30
     });
   }
+
+  // Google Slides drops imported online video, so leave the link in the speaker
+  // notes where it can be copied straight into Insert > Video.
+  if (data.url) {
+    slide.addNotes(
+      data.title + '\n' + data.url + '\n\n' +
+      'Plays inside the slideshow in PowerPoint and Keynote.\n' +
+      'In Google Slides, use Insert > Video and paste the link above.'
+    );
+  }
 }
 
 // Mixer slides say one word. Leaders explain the mixer out loud.
@@ -4263,6 +4431,11 @@ function saveToLibrary() {
 
   const category = selectedCategory;
   const now = new Date().toISOString();
+
+  // The library is shared across the region, so it never stores the raw words
+  const scrubbed = cleanLyrics(lyrics);
+  lyrics = scrubbed.text;
+
   const existing = songLibraryCache.find(s => s.title.toLowerCase() === title.toLowerCase());
 
   if (db && dbOnline) {
