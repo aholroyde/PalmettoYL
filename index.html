@@ -4470,9 +4470,9 @@ function newSongId() {
 function saveToLibrary() {
   const title = document.getElementById('songSearch').value.trim();
   const artist = document.getElementById('songArtist').value.trim();
-  const lyrics = document.getElementById('searchLyrics').value.trim();
+  const rawLyrics = document.getElementById('searchLyrics').value.trim();
 
-  if (!title || !lyrics) {
+  if (!title || !rawLyrics) {
     showToast('Enter a song title and lyrics first');
     return;
   }
@@ -4481,8 +4481,7 @@ function saveToLibrary() {
   const now = new Date().toISOString();
 
   // The library is shared across the region, so it never stores the raw words
-  const scrubbed = cleanLyrics(lyrics);
-  lyrics = scrubbed.text;
+  const lyrics = cleanLyrics(rawLyrics).text;
 
   const existing = songLibraryCache.find(s => s.title.toLowerCase() === title.toLowerCase());
 
